@@ -201,19 +201,48 @@
 
   <div id="topBar">
 
+  <button
+    onclick="previousBox()"
+    style="
+      background:rgba(255,255,255,0.2);
+      width:45px;
+      height:45px;
+      border-radius:50%;
+      font-size:22px;
+      padding:0;
+    "
+  >
+    ←
+  </button>
+
   <div id="boxName">
     BOX_001
   </div>
 
-  <div id="totalBox">
-    Total: <span id="totalItems">0</span>
-  </div>
+  <button
+    onclick="nextBox()"
+    style="
+      background:rgba(255,255,255,0.2);
+      width:45px;
+      height:45px;
+      border-radius:50%;
+      font-size:22px;
+      padding:0;
+    "
+  >
+    →
+  </button>
 
-  </div>
+</div>
 
   <div id="reader"></div>
 
   <div id="status"></div>
+
+  <div class="summary">
+    Total Items:
+    <span id="totalItems">0</span>
+  </div>
 
   <div class="buttons">
     <button
@@ -446,6 +475,41 @@ function createNewBox() {
 
   //saveDate();
   saveData();
+}
+
+function previousBox() {
+
+  if (currentBoxNumber <= 1) {
+    return;
+  }
+
+  currentBoxNumber--;
+
+  currentBox =
+    `BOX_${String(currentBoxNumber)
+      .padStart(3, "0")}`;
+
+  renderTable();
+}
+
+function nextBox() {
+
+  const next =
+    currentBoxNumber + 1;
+
+  const nextBoxName =
+    `BOX_${String(next)
+      .padStart(3, "0")}`;
+
+  if (!boxes[nextBoxName]) {
+    return;
+  }
+
+  currentBoxNumber++;
+
+  currentBox = nextBoxName;
+
+  renderTable();
 }
 
 function increaseQty(key) {
