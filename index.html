@@ -385,7 +385,10 @@
         </tr>
       `;
 
-      tbody.insertAdjacentHTML += row;
+      tbody.insertAdjacentHTML(
+        "beforeend",
+        row
+      );
     });
 
   document.getElementById("totalItems")
