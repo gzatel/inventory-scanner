@@ -296,28 +296,33 @@
 
     function renderTable() {
 
-  const tbody =
-    document.getElementById("tableBody");
+  try {
 
-  tbody.innerHTML = "";
+    const tbody =
+      document.getElementById("tableBody");
 
-  let total = 0;
+    tbody.innerHTML = "";
 
-  const inventory =
-    boxes[currentBox];
+    let total = 0;
 
-  Object.values(inventory)
-    .sort((a, b) =>
-      a.partNumber.localeCompare(b.partNumber)
-    )
-    .forEach(item => {
+    const inventory =
+      boxes[currentBox];
 
-      total += item.qty;
+    Object.values(inventory)
+      .sort((a, b) =>
+        a.partNumber.localeCompare(b.partNumber)
+      )
+      .forEach(item => {
 
-      const key =
-        `${item.partNumber}|${item.nameEN}`;
+        total += item.qty;
 
-      const row = `
+        const key =
+          `${item.partNumber}|${item.nameEN}`;
+
+        const safeKey =
+          key.replace(/'/g, "\\'");
+
+        const row = `
         <tr>
 
           <td>
@@ -338,7 +343,7 @@
             ">
 
               <button
-                onclick="decreaseQty('${key}')"
+                onclick="decreaseQty('${safeKey}')"
                 style="
                   background:#d32f2f;
                   width:40px;
@@ -352,7 +357,7 @@
               </button>
 
               <div
-                onclick="editQty('${key}')"
+                onclick="editQty('${safeKey}')"
                 style="
                   min-width:40px;
                   text-align:center;
@@ -365,7 +370,7 @@
               </div>
 
               <button
-                onclick="increaseQty('${key}')"
+                onclick="increaseQty('${safeKey}')"
                 style="
                   background:#388e3c;
                   width:40px;
@@ -385,17 +390,33 @@
         </tr>
       `;
 
-      tbody.insertAdjacentHTML(
-        "beforeend",
-        row
-      );
-    });
+        tbody.insertAdjacentHTML(
+          "beforeend",
+          row
+        );
+      });
 
-  document.getElementById("totalItems")
-    .innerText = total;
+    document.getElementById("totalItems")
+      .innerText = total;
 
-  document.getElementById("boxName")
-    .innerText = currentBox;
+    document.getElementById("boxName")
+      .innerText = currentBox;
+
+  }
+  catch(err) {
+
+    console.error(err);
+
+    document.getElementById("status")
+      .innerHTML = `
+        <div style="
+          color:red;
+          font-size:18px;
+        ">
+          ${err}
+        </div>
+      `;
+  }
 }
 
 function createNewBox() {
