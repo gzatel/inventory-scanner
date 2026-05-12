@@ -1,8 +1,10 @@
 {
+  "id": "/",
   "name": "Mimaki Inventory Scanner",
   "short_name": "Mimaki Scanner",
   "start_url": "./",
   "display": "standalone",
+  "display_override": ["standalone"],
   "background_color": "#ffffff",
   "theme_color": "##EC270C",
   "orientation": "portrait",
