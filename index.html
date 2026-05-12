@@ -297,6 +297,13 @@
 
   </div>
 
+  <input
+    type="text"
+    id="searchInput"
+    placeholder="Search..."
+    oninput="updateSearch()"
+  >
+
   <table>
     <thead>
       <tr>
@@ -319,6 +326,8 @@
 
     let currentBox =
         `BOX_${String(currentBoxNumber).padStart(3, "0")}`;
+
+    let searchTerm = "";
 
     const boxes = {
         [currentBox]: {}
@@ -380,6 +389,19 @@
       .forEach(item => {
 
         total += item.qty;
+
+        const text =
+          (
+          item.partNumber +
+          " " +
+          item.nameEN
+          ).toLowerCase();
+
+        if (
+          !text.includes(searchTerm)
+          ) {
+          return;
+          }
 
         const key =
           `${item.partNumber}|${item.nameEN}`;
@@ -802,6 +824,22 @@ renderTable();
 window.addEventListener("load", () => {
   setTimeout(startScanner, 300);
 });
+
+
+    // =========================
+    // filtro busqueda
+    // =========================
+
+    function updateSearch() {
+
+      searchTerm =
+        document
+        .getElementById("searchInput")
+        .value
+        .toLowerCase();
+
+      renderTable();
+    }
 
 
     // =========================
