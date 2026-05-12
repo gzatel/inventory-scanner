@@ -1,0 +1,928 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <link rel="manifest" href="manifest.json">
+
+  <meta name="theme-color" content="#1e1e1e">
+
+  <meta name="apple-mobile-web-app-capable" content="yes">
+
+  <meta
+    name="apple-mobile-web-app-status-bar-style"
+    content="black"
+  >
+
+  <meta charset="UTF-8" />
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0"
+  />
+
+  <title>Inventory Scanner</title>
+
+  <!-- QR Scanner -->
+  <script src="https://unpkg.com/html5-qrcode"></script>
+
+  <!-- XLSX Export -->
+  <script src="https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js"></script>
+
+  
+
+  <style>
+
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 15px;
+      background: #f5f5f5;
+      -webkit-user-select: none;
+      user-select: none;
+    }
+
+    h1 {
+      text-align: center;
+      color: #333;
+    }
+
+    #reader {
+      width: 100%;
+      max-width: none;
+      margin-top: 10px;
+      border-radius: 12px;
+      overflow: hidden;
+    }
+
+    #status {
+      margin-top: 10px;
+      text-align: center;
+      font-size: 22px;
+      font-weight: bold;
+    }
+
+    .ok {
+      color: green;
+    }
+
+    .error {
+      color: red;
+    }
+
+    .summary {
+      margin-top: 20px;
+      text-align: center;
+      font-size: 18px;
+      font-weight: bold;
+    }
+
+    .buttons {
+      position: sticky;
+      bottom: 0;
+
+      background: white;
+      padding: 10px;
+
+      display: flex;
+      gap: 10px;
+
+      justify-content: center;
+      flex-wrap: wrap;
+
+      border-top: 1px solid #ddd;
+    }
+
+    button {
+      padding: 12px 18px;
+      border: none;
+      border-radius: 8px;
+      font-size: 16px;
+      cursor: pointer;
+      color: white;
+      touch-action: manipulation;
+    }
+
+    .download {
+      background: #1976d2;
+    }
+
+    .clear {
+      background: #d32f2f;
+    }
+
+    table {
+      width: 100%;
+      margin-top: 10px;
+      border-collapse: collapse;
+      background: white;
+      border-radius: 10px;
+      overflow: hidden;
+    }
+
+    th {
+      background: #1976d2;
+      color: white;
+      padding: 10px;
+      font-size: 13px;
+    }
+
+    th:nth-child(3) {
+      text-align: center;
+    }
+
+    td {
+     padding: 12px;
+     border-bottom: 1px solid #eee;
+     font-size: 14px;
+    } 
+
+    th:nth-child(3),
+    td:nth-child(3) {
+      text-align: center;
+      width: 140px;
+    }
+
+    tr:nth-child(even) {
+      background: #fafafa;
+    }
+
+    .qty {
+      font-weight: bold;
+      font-size: 18px;
+      text-align: center;
+    }
+
+    html {
+      touch-action: manipulation;
+    }
+
+    #reader video {
+        width: 100%;
+      border-radius: 12px;
+      object-fit: cover;
+    }
+
+    #topBar {
+        position: sticky;
+        top: 0;
+        z-index: 999;
+        background: #1976d2;
+        color: white;
+
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+
+        padding: 12px 15px;
+        font-weight: bold;
+    }
+
+    #boxName {
+    font-size: 20px;
+    }
+
+    #totalBox {
+    font-size: 18px;
+    }
+
+
+  </style>
+</head>
+
+<body>
+
+<!-- /*
+
+<h1>Inventory Scanner</h1>
+
+<div id="currentBox" style="
+    text-align:center;
+    font-size:22px;
+    font-weight:bold;
+    margin-bottom:15px;
+    color:#1976d2;
+    ">
+    BOX_001
+</div>
+
+<div class="summary">
+    Total Items:
+    <span id="totalItems">0</span>
+</div>
+
+*/ -->
+
+  <div id="topBar">
+
+  <button
+    onclick="previousBox()"
+    style="
+      background:rgba(255,255,255,0.2);
+      width:45px;
+      height:45px;
+      border-radius:50%;
+      font-size:22px;
+      padding:0;
+    "
+  >
+    ←
+  </button>
+
+  <div id="boxName">
+    BOX_001
+  </div>
+
+  <button
+    onclick="nextBox()"
+    style="
+      background:rgba(255,255,255,0.2);
+      width:45px;
+      height:45px;
+      border-radius:50%;
+      font-size:22px;
+      padding:0;
+    "
+  >
+    →
+  </button>
+
+</div>
+
+  <div id="reader"></div>
+
+  <div id="status"></div>
+
+  <div class="summary">
+    Total Items:
+    <span id="totalItems">0</span>
+  </div>
+
+  <div class="buttons">
+    <button
+        class="download"
+        onclick="createNewBox()"
+    >
+      New Box
+    </button>
+
+    <button class="download" onclick="downloadExcel()">
+      Download Excel
+    </button>
+
+    <button class="clear" onclick="clearData()">
+      Clean
+    </button>
+  </div>
+
+  <table>
+    <thead>
+      <tr>
+        <th>Part Number</th>
+        <th>Details</th>
+        <th>Qty</th>
+      </tr>
+    </thead>
+
+    <tbody id="tableBody"></tbody>
+  </table>
+
+  <script>
+
+    // =========================
+    // INVENTORY STORAGE
+    // =========================
+
+    let currentBoxNumber = 1;
+
+    let currentBox =
+        `BOX_${String(currentBoxNumber).padStart(3, "0")}`;
+
+    const boxes = {
+        [currentBox]: {}
+    };
+
+    let lastScan = "";
+    let lastScanTime = 0;
+
+    // =========================
+    // SOUND
+    // =========================
+
+    const successSound = new Audio(
+        "https://actions.google.com/sounds/v1/cartoon/wood_plank_flicks.ogg"
+    );
+
+    successSound.preload = "auto";
+
+    const errorSound = new Audio(
+        "https://actions.google.com/sounds/v1/alarms/beep_short.ogg"
+    );
+
+    errorSound.preload = "auto";
+
+    function beep(success = true) {
+
+        const sound =
+        success
+        ? successSound
+        : errorSound;
+
+        sound.currentTime = 0;
+
+        sound.play();
+    }
+
+    // =========================
+    // UPDATE TABLE
+    // =========================
+
+    function renderTable() {
+
+  try {
+
+    const tbody =
+      document.getElementById("tableBody");
+
+    tbody.innerHTML = "";
+
+    let total = 0;
+
+    const inventory =
+      boxes[currentBox];
+
+    Object.values(inventory)
+      .sort((a, b) =>
+        a.partNumber.localeCompare(b.partNumber)
+      )
+      .forEach(item => {
+
+        total += item.qty;
+
+        const key =
+          `${item.partNumber}|${item.nameEN}`;
+
+        const safeKey =
+          key.replace(/'/g, "\\'");
+
+        const row = `
+        <tr>
+
+          <td>
+            ${item.partNumber}
+          </td>
+
+          <td>
+            ${item.nameEN}
+          </td>
+
+          <td class="qty">
+
+            <div style="
+              display:flex;
+              align-items:center;
+              justify-content:center;
+              gap:10px;
+            ">
+
+              <button
+                onclick="decreaseQty('${safeKey}')"
+                style="
+                  background:#d32f2f;
+                  width:40px;
+                  height:40px;
+                  border-radius:50%;
+                  font-size:24px;
+                  padding:0;
+                "
+              >
+                -
+              </button>
+
+              <div
+                onclick="editQty('${safeKey}')"
+                style="
+                  min-width:40px;
+                  text-align:center;
+                  font-size:22px;
+                  font-weight:bold;
+                  cursor:pointer;
+                "
+              >
+                ${item.qty}
+              </div>
+
+              <button
+                onclick="increaseQty('${safeKey}')"
+                style="
+                  background:#388e3c;
+                  width:40px;
+                  height:40px;
+                  border-radius:50%;
+                  font-size:24px;
+                  padding:0;
+                "
+              >
+                +
+              </button>
+
+            </div>
+
+          </td>
+
+        </tr>
+      `;
+
+        tbody.insertAdjacentHTML(
+          "beforeend",
+          row
+        );
+      });
+
+    document.getElementById("totalItems")
+      .innerText = total;
+
+    document.getElementById("boxName")
+      .innerText = currentBox;
+
+  }
+  catch(err) {
+
+    console.error(err);
+
+    document.getElementById("status")
+      .innerHTML = `
+        <div style="
+          color:red;
+          font-size:18px;
+        ">
+          ${err}
+        </div>
+      `;
+  }
+}
+
+function createNewBox() {
+
+  const hasItems =
+    Object.keys(boxes[currentBox]).length > 0;
+
+  if (!hasItems) {
+
+    alert("Current box is empty");
+
+    return;
+  }
+
+  currentBoxNumber++;
+
+  currentBox =
+    `BOX_${String(currentBoxNumber)
+      .padStart(3, "0")}`;
+
+  boxes[currentBox] = {};
+
+  document.getElementById("status")
+    .innerHTML = "";
+
+  renderTable();
+
+  //saveDate();
+  saveData();
+}
+
+function previousBox() {
+
+  if (currentBoxNumber <= 1) {
+    return;
+  }
+
+  currentBoxNumber--;
+
+  currentBox =
+    `BOX_${String(currentBoxNumber)
+      .padStart(3, "0")}`;
+
+  renderTable();
+  saveData();
+}
+
+function nextBox() {
+
+  const next =
+    currentBoxNumber + 1;
+
+  const nextBoxName =
+    `BOX_${String(next)
+      .padStart(3, "0")}`;
+
+  if (!boxes[nextBoxName]) {
+    return;
+  }
+
+  currentBoxNumber++;
+
+  currentBox = nextBoxName;
+
+  renderTable();
+  saveData();
+}
+
+function increaseQty(key) {
+
+  boxes[currentBox][key].qty++;
+
+  renderTable();
+
+  //saveDate();
+  saveData();
+}
+
+function decreaseQty(key) {
+
+  if (boxes[currentBox][key].qty > 1) {
+
+    boxes[currentBox][key].qty--;
+
+  } else {
+
+    delete boxes[currentBox][key];
+  }
+
+  renderTable();
+
+  //saveDate();
+  saveData();
+}
+
+function editQty(key) {
+
+  const currentQty =
+    boxes[currentBox][key].qty;
+
+  const newQty = prompt(
+    "New Quantity:",
+    currentQty
+  );
+
+  if (newQty === null) {
+    return;
+  }
+
+  const qty =
+    parseInt(newQty);
+
+  if (isNaN(qty) || qty < 1) {
+
+    alert("Invalid quantity");
+
+    return;
+  }
+
+  boxes[currentBox][key].qty = qty;
+
+  renderTable();
+
+  //saveDate();
+  saveData();
+}
+
+    // =========================
+    // PROCESS QR
+    // =========================
+
+    function processQR(decodedText) {
+
+      try {
+
+        const parts =
+          decodedText.trim().split(/\s+/);
+
+        if (parts.length < 6) {
+
+          beep(false);
+
+          document.getElementById("status")
+            .innerHTML =
+            `<span class="error">
+              Invalid QR
+            </span>`;
+
+          return;
+        }
+
+        // Eliminar:
+        // fecha / serial / qty
+
+        parts.pop();
+        parts.pop();
+        parts.pop();
+
+        // Obtener:
+        // Part Number
+
+        const partNumber =
+          parts.shift();
+
+        // Ignorar japonés
+
+        parts.shift();
+
+        // Resto = EN
+
+        const nameEN =
+          parts.join(" ");
+
+        // Anti doble scan accidental
+
+        const uniqueKey =
+          `${partNumber}|${nameEN}`;
+
+        const now = Date.now();
+
+        if (
+          uniqueKey === lastScan &&
+          now - lastScanTime < 500
+        ) {
+          return;
+        }
+
+        lastScan = uniqueKey;
+        lastScanTime = now;
+
+        // Agregar / incrementar
+
+        const inventory = 
+          boxes[currentBox];
+
+        if (!inventory[uniqueKey]) {
+
+          inventory[uniqueKey] = {
+            partNumber,
+            nameEN,
+            qty: 0
+          };
+        }
+
+        inventory[uniqueKey].qty++;
+
+        beep(true);
+        navigator.vibrate?.(80);
+
+       document.getElementById("status").innerHTML =
+         `
+        <div style="
+          font-size:22px;
+          font-weight:bold;
+          color:#2e7d32;
+        ">
+          ${partNumber}
+        </div>
+        <div style="font-size:16px;">
+          ${nameEN}
+        </div>
+        `;
+
+        renderTable();
+
+        saveData();
+
+      }
+      catch(err) {
+
+        console.error(err);
+
+        beep(false);
+        navigator.vibrate?.(110);
+
+        document.getElementById("status")
+          .innerHTML =
+          `<span class="error">
+            Error reading QR
+          </span>`;
+      }
+    }
+
+    // =========================
+    // QR SCANNER
+    // =========================
+/*
+const qrConfig = {
+  fps: 20,
+
+  qrbox: 180, // MÁS PEQUEÑO = MÁS RÁPIDO
+  aspectRatio: 1.0,
+  
+  videoConstraints: {
+    width: { ideal: 1280 },
+    height: { ideal: 720 },
+    facingMode: "environment",
+    //focusMode: "continuous"
+  }
+};
+*/
+
+
+
+function startScanner() {
+
+  const html5QrCode = new Html5Qrcode("reader");
+
+  Html5Qrcode.getCameras()
+    .then(devices => {
+
+      if (!devices || devices.length === 0) {
+        console.error("No cameras found");
+        return;
+      }
+
+      let cameraId = devices[0].id;
+
+      const backCam = devices.find(d =>
+        (d.label || "").toLowerCase().includes("back") ||
+        (d.label || "").toLowerCase().includes("rear")
+      );
+
+      if (backCam) {
+        cameraId = backCam.id;
+      }
+
+      html5QrCode.start(
+        cameraId,
+        {
+          fps: 20,
+          qrbox: 180,
+          videoConstraints: {
+            facingMode: "environment",
+            width: { ideal: 1280 },
+            height: { ideal: 720 }
+          }
+        },
+        processQR
+      )
+      .then(() => {
+        console.log("Camera started");
+      })
+      .catch(err => {
+        console.error("Camera start error:", err);
+      });
+
+    })
+    .catch(err => {
+      console.error("Camera access error:", err);
+    });
+}
+
+loadData();
+
+renderTable();
+
+window.addEventListener("load", () => {
+  setTimeout(startScanner, 300);
+});
+
+
+    // =========================
+    // LOCAL SAVE
+    // =========================
+
+    function saveData() {
+
+     const data = {
+      currentBoxNumber,
+      currentBox,
+       boxes
+     };
+
+      localStorage.setItem(
+       "qrInventoryData",
+      JSON.stringify(data)
+     );
+    }
+
+    function loadData() {
+
+  const saved =
+    localStorage.getItem("qrInventoryData");
+
+  if (!saved) {
+    return;
+  }
+
+  try {
+
+    const data =
+      JSON.parse(saved);
+
+    currentBoxNumber =
+      data.currentBoxNumber || 1;
+
+    currentBox =
+      data.currentBox || "BOX_001";
+
+    Object.keys(boxes).forEach(key => {
+      delete boxes[key];
+    });
+
+    Object.assign(
+      boxes,
+      data.boxes || {}
+    );
+
+  }
+  catch(err) {
+
+    console.error(
+      "Error loading saved data",
+      err
+    );
+  }
+}
+
+    // =========================
+    // EXPORT EXCEL
+    // =========================
+
+    function downloadExcel() {
+
+        const workbook =
+        XLSX.utils.book_new();
+
+        Object.entries(boxes)
+            .forEach(([boxName, inventory]) => {
+
+            const data =
+                Object.values(inventory).map(item => ({
+                "Part Number": item.partNumber,
+                "Details": item.nameEN,
+                "Qty": item.qty
+                }));
+
+            const worksheet =
+                XLSX.utils.json_to_sheet(data);
+
+            XLSX.utils.book_append_sheet(
+                workbook,
+                worksheet,
+                boxName
+            );
+            });
+
+        XLSX.writeFile(
+            workbook,
+            "inventory_master.xlsx"
+        );
+    }
+
+    // =========================
+    // CLEAR DATA
+    // =========================
+
+    function clearData() {
+
+  if (!confirm("Clear ALL data?")) {
+    return;
+  }
+
+  // Reset boxes
+
+  currentBoxNumber = 1;
+
+  currentBox = "BOX_001";
+
+  Object.keys(boxes).forEach(key => {
+    delete boxes[key];
+  });
+
+  boxes[currentBox] = {};
+
+  // Clear local storage
+
+  localStorage.removeItem(
+    "qrInventoryData"
+  );
+
+  // Clear UI
+
+  document.getElementById("status")
+    .innerHTML = "";
+
+  renderTable();
+
+  saveData();
+}
+
+    if ("serviceWorker" in navigator) {
+
+        navigator.serviceWorker
+        .register("./service-worker.js")
+        .then(() => {
+
+        console.log(
+            "Service Worker Registered"
+        );
+
+        });
+    }
+
+  </script>
+
+</body>
+</html>
