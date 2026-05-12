@@ -1,6 +1,17 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
+  <link rel="manifest" href="manifest.json">
+
+  <meta name="theme-color" content="#1e1e1e">
+
+  <meta name="apple-mobile-web-app-capable" content="yes">
+
+  <meta
+    name="apple-mobile-web-app-status-bar-style"
+    content="black"
+  >
+
   <meta charset="UTF-8" />
   <meta
     name="viewport"
@@ -490,6 +501,7 @@ function previousBox() {
       .padStart(3, "0")}`;
 
   renderTable();
+  saveData();
 }
 
 function nextBox() {
@@ -510,6 +522,7 @@ function nextBox() {
   currentBox = nextBoxName;
 
   renderTable();
+  saveData();
 }
 
 function increaseQty(key) {
@@ -895,6 +908,19 @@ window.addEventListener("load", () => {
 
   saveData();
 }
+
+    if ("serviceWorker" in navigator) {
+
+        navigator.serviceWorker
+        .register("./service-worker.js")
+        .then(() => {
+
+        console.log(
+            "Service Worker Registered"
+        );
+
+        });
+    }
 
   </script>
 
