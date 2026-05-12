@@ -316,6 +316,8 @@
     oninput="updateSearch()"
   >
 
+  <div id="searchResults"></div>
+
   <table>
     <thead>
       <tr>
@@ -846,13 +848,102 @@ window.addEventListener("load", () => {
     function updateSearch() {
 
       searchTerm =
-        document
-        .getElementById("searchInput")
-        .value
-        .toLowerCase();
+       document
+       .getElementById("searchInput")
+       .value
+       .toLowerCase();
+
+      renderGlobalSearch();
 
       renderTable();
     }
+
+
+    function renderGlobalSearch() {
+
+  const container =
+    document.getElementById(
+      "searchResults"
+    );
+
+  container.innerHTML = "";
+
+  if (!searchTerm) {
+    return;
+  }
+
+  Object.entries(boxes)
+    .forEach(([boxName, inventory]) => {
+
+      Object.values(inventory)
+        .forEach(item => {
+
+          const text =
+            (
+              item.partNumber +
+              " " +
+              item.nameEN
+            ).toLowerCase();
+
+          if (
+            !text.includes(searchTerm)
+          ) {
+            return;
+          }
+
+          const div =
+            document.createElement("div");
+
+          div.style = `
+            background:white;
+            padding:12px;
+            margin-bottom:8px;
+            border-radius:10px;
+            border:1px solid #ddd;
+          `;
+
+          div.innerHTML = `
+            <strong>
+              ${item.partNumber}
+            </strong>
+            <br>
+
+            ${item.nameEN}
+
+            <br><br>
+
+            <strong>
+              ${boxName}
+            </strong>
+
+            — Qty:
+            ${item.qty}
+          `;
+
+          div.onclick = () => {
+
+            currentBox = boxName;
+
+            currentBoxNumber =
+              parseInt(
+                boxName.replace("BOX_", "")
+              );
+
+            renderTable();
+
+            container.innerHTML = "";
+
+            document
+              .getElementById("searchInput")
+              .value = "";
+
+            searchTerm = "";
+          };
+
+          container.appendChild(div);
+        });
+    });
+}
 
 
     // =========================
