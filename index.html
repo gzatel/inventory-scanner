@@ -282,6 +282,19 @@
     <button class="clear" onclick="clearData()">
       Clean
     </button>
+
+    <button onclick="toggleBoxList()">
+      Boxes
+    </button>
+
+    <div
+      id="boxList"
+      style="
+       display:none;
+       margin-top:10px;
+      "
+    ></div>
+
   </div>
 
   <table>
@@ -847,6 +860,92 @@ window.addEventListener("load", () => {
     );
   }
 }
+
+
+    // =========================
+    // lista cajas
+    // =========================
+
+    function toggleBoxList() {
+
+    const boxList =
+      document.getElementById("boxList");
+
+      if (boxList.style.display === "none") {
+
+        renderBoxList();
+
+        boxList.style.display = "block";
+
+      }
+      else {
+
+        boxList.style.display = "none";
+      }
+    }
+
+    function renderBoxList() {
+
+      const boxList =
+        document.getElementById("boxList");
+
+      boxList.innerHTML = "";
+
+      Object.keys(boxes)
+        .sort()
+        .forEach(boxName => {
+
+          const inventory =
+            boxes[boxName];
+
+          let total = 0;
+
+          Object.values(inventory)
+            .forEach(item => {
+
+              total += item.qty;
+
+            });
+
+          const boxDiv =
+            document.createElement("div");
+
+          boxDiv.style = `
+            background:#1e1e1e;
+            padding:12px;
+            margin-bottom:8px;
+            border-radius:10px;
+            cursor:pointer;
+            border:${
+              boxName === currentBox
+                ? "2px solid #4caf50"
+                : "1px solid #333"
+            };
+          `;
+
+          boxDiv.innerHTML = `
+            <strong>${boxName}</strong>
+            <br>
+            ${total} items
+          `;
+
+          boxDiv.onclick = () => {
+
+            currentBox = boxName;
+
+            currentBoxNumber =
+              parseInt(
+                boxName.replace("BOX_", "")
+              );
+
+            renderTable();
+
+            boxList.style.display = "none";
+          };
+
+          boxList.appendChild(boxDiv);
+        });
+    }
 
     // =========================
     // EXPORT EXCEL
