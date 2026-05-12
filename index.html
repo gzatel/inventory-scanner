@@ -401,20 +401,6 @@
         a.partNumber.localeCompare(b.partNumber)
       )
       .forEach(item => {
-
-        const text =
-          (
-          item.partNumber +
-          " " +
-          item.nameEN
-          ).toLowerCase();
-
-        if (
-          !text.includes(searchTerm)
-          ) {
-          return;
-          }
-
         
         total += item.qty;
 
