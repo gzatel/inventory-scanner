@@ -896,16 +896,16 @@ window.addEventListener("load", () => {
         .forEach(boxName => {
 
           const inventory =
-            boxes[boxName];
+            boxes[boxName] || {};
 
           let total = 0;
 
           Object.values(inventory)
             .forEach(item => {
 
-              total += item.qty;
+            total += item.qty || 0;
 
-            });
+          });
 
           const boxDiv =
             document.createElement("div");
