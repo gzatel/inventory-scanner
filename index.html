@@ -1353,6 +1353,78 @@ const safeExportName =
         const workbook =
         XLSX.utils.book_new();
 
+        // =========================
+        // SUMMARY DATA
+        // =========================
+
+        const totalBoxes =
+          Object.keys(boxes).length;
+
+        let totalItems = 0;
+
+        const summaryRows = [];
+
+        Object.entries(boxes)
+          .forEach(([boxName, inventory]) => {
+
+            let boxTotal = 0;
+
+            Object.values(inventory)
+              .forEach(item => {
+
+                boxTotal += item.qty;
+                totalItems += item.qty;
+
+              });
+
+            summaryRows.push([
+              boxName,
+              boxTotal
+            ]);
+          });
+
+        const summarySheet =
+          XLSX.utils.aoa_to_sheet([
+
+            ["Project", projectName],
+            ["Export Date", new Date().toLocaleDateString()],
+            [],
+            ["Total Boxes", totalBoxes],
+            ["Total Items", totalItems],
+            [],
+            ["Box", "Items"],
+            ...summaryRows
+
+          ]);
+
+        // Column widths
+
+        summarySheet["!cols"] = [
+          { wch: 25 },
+          { wch: 15 }
+        ];
+
+        // Freeze header
+
+        summarySheet["!freeze"] = {
+          xSplit: 0,
+          ySplit: 7
+        };
+
+        // Filter
+
+        summarySheet["!autofilter"] = {
+          ref: "A7:B7"
+        };
+
+        // Add sheet
+
+        XLSX.utils.book_append_sheet(
+          workbook,
+          summarySheet,
+          "SUMMARY"
+        );
+
         Object.entries(boxes)
             .forEach(([boxName, inventory]) => {
 
@@ -1363,8 +1435,46 @@ const safeExportName =
                 "Qty": item.qty
                 }));
 
-            const worksheet =
-                XLSX.utils.json_to_sheet(data);
+            const worksheet = XLSX.utils.aoa_to_sheet([
+
+              [`Project`, projectName],
+              [`Box`, boxName],
+              [`Export Date`, new Date().toLocaleDateString()],
+              [],
+
+              ["Part Number", "Details", "Qty"]
+
+            ]);
+
+            XLSX.utils.sheet_add_json(
+              worksheet,
+              data,
+              {
+                origin: "A6",
+                skipHeader: true
+              }
+            );
+
+                // Column widths
+
+                  worksheet["!cols"] = [
+                    { wch: 22 },
+                    { wch: 45 },
+                    { wch: 10 }
+                  ];
+
+                  // Auto filter
+
+                  worksheet["!autofilter"] = {
+                    ref: "A5:C5"
+                  };
+
+                  // Freeze top row
+
+                  worksheet["!freeze"] = {
+                    xSplit: 0,
+                    ySplit: 5
+                  };
 
             XLSX.utils.book_append_sheet(
                 workbook,
@@ -1382,10 +1492,6 @@ const date =
     .replace("T", "_")
     .replace(":", "-");
 
-const totalBoxes =
-  Object.keys(boxes).length;
-
-let totalItems = 0;
 
 Object.values(boxes)
   .forEach(inventory => {
