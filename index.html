@@ -291,6 +291,13 @@
       Download Excel
     </button>
 
+    <button
+      class="download"
+      onclick="document.getElementById('excelImport').click()"
+    >
+      Import Excel
+    </button>
+
     <button class="clear" onclick="clearData()">
       Clean
     </button>
@@ -419,6 +426,15 @@
 
     <tbody id="tableBody"></tbody>
   </table>
+
+  <input
+  type="file"
+  id="excelImport"
+  accept=".xlsx,.xls"
+  style="display:none"
+  onchange="importExcel(event)"
+  >
+
 
   <script>
 
@@ -1710,6 +1726,152 @@ const fileName =
 
   return group;
 }
+
+    // =========================
+    // import excel
+    // =========================
+
+      async function importExcel(event) {
+
+      const file =
+        event.target.files[0];
+
+      if (!file) {
+        return;
+      }
+
+      const confirmReplace =
+        confirm(
+          "Replace current inventory?"
+        );
+
+      if (!confirmReplace) {
+        return;
+      }
+
+      try {
+
+        const data =
+          await file.arrayBuffer();
+
+        const workbook =
+          XLSX.read(data);
+
+        // Reset inventory
+
+        boxes = {};
+
+        // Read all sheets
+
+        workbook.SheetNames
+          .forEach(sheetName => {
+
+            // Ignore summary
+
+            if (
+              sheetName === "SUMMARY"
+            ) {
+              return;
+            }
+
+            const worksheet =
+              workbook.Sheets[sheetName];
+
+            // Read rows starting at line 6
+
+            const rows =
+              XLSX.utils.sheet_to_json(
+                worksheet,
+                {
+                  range: 5
+                }
+              );
+
+            boxes[sheetName] = {};
+
+            rows.forEach(row => {
+
+              const partNumber =
+                row["Part Number"];
+
+              const nameEN =
+                row["Details"];
+
+              const qty =
+                Number(row["Qty"]) || 0;
+
+              if (
+                !partNumber ||
+                !nameEN ||
+                qty <= 0
+              ) {
+                return;
+              }
+
+              const key =
+                `${partNumber}|${nameEN}`;
+
+              boxes[sheetName][key] = {
+                partNumber,
+                nameEN,
+                qty
+              };
+            });
+          });
+
+        // Restore first box
+
+        const firstBox =
+          Object.keys(boxes)
+            .sort()[0];
+
+        currentBox =
+          firstBox || "BOX_001";
+
+        currentBoxNumber =
+          parseInt(
+            currentBox.replace(
+              "BOX_",
+              ""
+            )
+          ) || 1;
+
+        renderTable();
+
+        saveData();
+
+        beep(true);
+
+        document.getElementById(
+          "status"
+        ).innerHTML =
+        `
+        <div style="
+          color:#2e7d32;
+          font-size:22px;
+          font-weight:bold;
+        ">
+          Excel Imported
+        </div>
+        `;
+
+      }
+      catch(err) {
+
+        console.error(err);
+
+        beep(false);
+
+        alert(
+          "Error importing Excel"
+        );
+      }
+
+      // Reset input
+
+      event.target.value = "";
+    }
+
 
     // =========================
     // CLEAR DATA
