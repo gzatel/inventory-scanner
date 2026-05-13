@@ -1487,6 +1487,209 @@ window.addEventListener("load", () => {
       }
     }
 
+
+    function styleSummarySheet(worksheet) {
+
+  const range =
+    XLSX.utils.decode_range(
+      worksheet["!ref"]
+    );
+
+  for (
+    let R = range.s.r;
+    R <= range.e.r;
+    ++R
+  ) {
+
+    for (
+      let C = range.s.c;
+      C <= range.e.c;
+      ++C
+    ) {
+
+      const cellAddress =
+        XLSX.utils.encode_cell({
+          r: R,
+          c: C
+        });
+
+      const cell =
+        worksheet[cellAddress];
+
+      if (!cell) {
+        continue;
+      }
+
+      // BASE STYLE
+
+      cell.s = {
+
+        font: {
+          name: "Arial",
+          sz: 11,
+          color: { rgb: "222222" }
+        },
+
+        alignment: {
+          vertical: "center"
+        }
+
+      };
+
+      // =========================
+      // TITLE
+      // =========================
+
+      if (R === 0) {
+
+        cell.s = {
+
+          font: {
+            bold: true,
+            sz: 18,
+            color: {
+              rgb: "C62828"
+            }
+          },
+
+          alignment: {
+            horizontal: "left",
+            vertical: "center"
+          }
+
+        };
+      }
+
+      // =========================
+      // LABELS
+      // =========================
+
+      if (
+        (R >= 1 && R <= 4) &&
+        C === 0
+      ) {
+
+        cell.s.font = {
+          bold: true,
+          color: {
+            rgb: "444444"
+          }
+        };
+      }
+
+      // =========================
+      // TABLE HEADER
+      // =========================
+
+      if (R === 6) {
+
+        cell.s = {
+
+          font: {
+            bold: true,
+            color: {
+              rgb: "FFFFFF"
+            }
+          },
+
+          fill: {
+            fgColor: {
+              rgb: "C62828"
+            }
+          },
+
+          alignment: {
+            horizontal: "center",
+            vertical: "center"
+          },
+
+          border: {
+            top: {
+              style: "thin",
+              color: { rgb: "DDDDDD" }
+            },
+            bottom: {
+              style: "thin",
+              color: { rgb: "DDDDDD" }
+            },
+            left: {
+              style: "thin",
+              color: { rgb: "DDDDDD" }
+            },
+            right: {
+              style: "thin",
+              color: { rgb: "DDDDDD" }
+            }
+          }
+
+        };
+      }
+
+      // =========================
+      // ZEBRA ROWS
+      // =========================
+
+      if (
+        R >= 7 &&
+        R % 2 === 1
+      ) {
+
+        cell.s.fill = {
+          fgColor: {
+            rgb: "F7F7F7"
+          }
+        };
+      }
+
+      // =========================
+      // BOX COLUMN
+      // =========================
+
+      if (
+        R >= 7 &&
+        C === 0
+      ) {
+
+        cell.s.font = {
+          bold: true
+        };
+      }
+
+      // =========================
+      // ITEMS COLUMN
+      // =========================
+
+      if (
+        R >= 7 &&
+        C === 1
+      ) {
+
+        cell.s.alignment = {
+          horizontal: "center"
+        };
+
+        cell.s.font = {
+          bold: true,
+          color: {
+            rgb: "C62828"
+          }
+        };
+      }
+    }
+  }
+
+  // ROW HEIGHTS
+
+  worksheet["!rows"] = [
+    { hpt: 28 },
+    { hpt: 20 },
+    { hpt: 20 },
+    { hpt: 20 },
+    { hpt: 20 }
+  ];
+}
+
+
     function downloadExcel() {
 
         const exportName =
@@ -1516,38 +1719,59 @@ const safeExportName =
 
         const summaryRows = [];
 
+        const globalItems = {};
+
         Object.entries(boxes)
-          .forEach(([boxName, inventory]) => {
+            .forEach(([boxName, inventory]) => {
 
-            let boxTotal = 0;
+              let boxTotal = 0;
 
-            Object.values(inventory)
-              .forEach(item => {
+              Object.values(inventory)
+                .forEach(item => {
 
-                boxTotal += item.qty;
-                totalItems += item.qty;
+                  boxTotal += item.qty;
+                  totalItems += item.qty;
 
-              });
+                  const globalKey =
+                    `${item.partNumber}|${item.nameEN}`;
 
-            summaryRows.push([
-              boxName,
-              boxTotal
+                  if (!globalItems[globalKey]) {
+
+                    globalItems[globalKey] = {
+
+                      partNumber: item.partNumber,
+                      nameEN: item.nameEN,
+                      totalQty: 0,
+                      boxes: new Set()
+
+                    };
+                  }
+
+                  globalItems[globalKey].totalQty += item.qty;
+
+                  globalItems[globalKey].boxes.add(boxName);
+
+                });
+
+              summaryRows.push([
+                boxName,
+                boxTotal
+              ]);
+            });
+
+         const summarySheet =
+            XLSX.utils.aoa_to_sheet([
+
+              ["PROJECT SUMMARY"],
+              ["Project", projectName],
+              ["Export Date", new Date().toLocaleDateString()],
+              ["Total Boxes", totalBoxes],
+              ["Total Items", totalItems],
+              [],
+              ["Box", "Items"],
+              ...summaryRows
+
             ]);
-          });
-
-        const summarySheet =
-          XLSX.utils.aoa_to_sheet([
-
-            ["Project", projectName],
-            ["Export Date", new Date().toLocaleDateString()],
-            [],
-            ["Total Boxes", totalBoxes],
-            ["Total Items", totalItems],
-            [],
-            ["Box", "Items"],
-            ...summaryRows
-
-          ]);
 
         // Column widths
 
@@ -1569,12 +1793,101 @@ const safeExportName =
           ref: "A7:B7"
         };
 
+        styleSummarySheet(summarySheet);
+
         // Add sheet
 
         XLSX.utils.book_append_sheet(
           workbook,
           summarySheet,
           "SUMMARY"
+        );
+
+        // =========================
+        // GLOBAL SUMMARY
+        // =========================
+
+        const globalData =
+          Object.values(globalItems)
+            .map(item => ({
+
+              "Part Number":
+                item.partNumber,
+
+              "Details":
+                item.nameEN,
+
+              "Total Qty":
+                item.totalQty,
+
+              "Boxes":
+                Array.from(item.boxes)
+                  .sort()
+                  .join(", ")
+
+            }))
+            .sort((a, b) =>
+              a["Part Number"]
+                .localeCompare(
+                  b["Part Number"]
+                )
+            );
+
+        const globalSheet =
+          XLSX.utils.aoa_to_sheet([
+
+            ["GLOBAL INVENTORY"],
+            [],
+            [
+              "Part Number",
+              "Details",
+              "Total Qty",
+              "Boxes"
+            ]
+
+          ]);
+
+        XLSX.utils.sheet_add_json(
+          globalSheet,
+          globalData,
+          {
+            origin: "A4",
+            skipHeader: true
+          }
+        );
+
+        // widths
+
+        globalSheet["!cols"] = [
+
+          { wch: 22 },
+          { wch: 45 },
+          { wch: 12 },
+          { wch: 35 }
+
+        ];
+
+        // filter
+
+        globalSheet["!autofilter"] = {
+          ref: "A3:D3"
+        };
+
+        // freeze
+
+        globalSheet["!freeze"] = {
+          xSplit: 0,
+          ySplit: 3
+        };
+
+        // style
+
+        styleWorksheet(globalSheet);
+
+        XLSX.utils.book_append_sheet(
+          workbook,
+          globalSheet,
+          "GLOBAL_SUMMARY"
         );
 
         Object.entries(boxes)
