@@ -295,6 +295,15 @@
       Clean
     </button>
 
+    <button
+      onclick="undoLastScan()"
+      style="
+      background:#ef6c00;
+     "
+    >
+      Undo
+    </button>
+
     <button onclick="toggleBoxList()">
       Boxes
     </button>
@@ -363,7 +372,7 @@
     </button>
 
     <button
-      onclick="setScanMode(700)"
+      onclick="setScanMode(800)"
       style="
         background:#1976d2;
         flex:1;
@@ -423,12 +432,14 @@
         `BOX_${String(currentBoxNumber).padStart(3, "0")}`;
 
     let searchTerm = "";
+    let projectName = "";
 
     let boxes = {};
 
     let lastScan = "";
     let lastScanTime = 0;
-    let scanDelay = 500;
+    let lastAction = null;
+    let scanDelay = 800;
 
     // =========================
     // SOUND
@@ -461,6 +472,31 @@
     // =========================
     // UPDATE TABLE
     // =========================
+
+    function setupProject() {
+
+  if (projectName) {
+    return;
+  }
+
+  const name = prompt(
+    "Enter Project Name"
+  );
+
+  if (!name || !name.trim()) {
+
+    projectName = "Inventory";
+
+  } else {
+
+    projectName =
+      name.trim();
+  }
+
+  saveData();
+}
+
+
 
     function renderTable() {
 
@@ -568,6 +604,8 @@
       .innerText = total;
 
     document.getElementById("boxName")
+  .innerText =
+  `${projectName} • ${currentBox}`;ocument.getElementById("boxName")
       .innerText = currentBox;
 
   }
@@ -791,6 +829,11 @@ function editQty(key) {
 
         inventory[uniqueKey].qty++;
 
+        lastAction = {
+          box: currentBox,
+          key: uniqueKey
+        };
+
         beep(true);
         navigator.vibrate?.(80);
 
@@ -923,6 +966,8 @@ function startScanner() {
 
 loadData();
 
+setupProject();
+
 if (!boxes[currentBox]) {
   boxes[currentBox] = {};
 }
@@ -934,6 +979,69 @@ renderTable();
 window.addEventListener("load", () => {
   setTimeout(startScanner, 300);
 });
+
+
+
+    function undoLastScan() {
+
+  if (!lastAction) {
+
+    alert("Nothing to undo");
+
+    return;
+  }
+
+  const inventory =
+    boxes[lastAction.box];
+
+  if (!inventory) {
+    return;
+  }
+
+  const item =
+    inventory[lastAction.key];
+
+  if (!item) {
+    return;
+  }
+
+  item.qty--;
+
+  if (item.qty <= 0) {
+    delete inventory[lastAction.key];
+  }
+
+  currentBox =
+    lastAction.box;
+
+  currentBoxNumber =
+    parseInt(
+      currentBox.replace("BOX_", "")
+    );
+
+  lastAction = null;
+
+  beep(false);
+
+  navigator.vibrate?.(120);
+
+  document.getElementById("status")
+    .innerHTML =
+    `
+    <div style="
+      color:#ef6c00;
+      font-size:22px;
+      font-weight:bold;
+    ">
+      Last scan removed
+    </div>
+    `;
+
+  renderTable();
+
+  saveData();
+}
+
 
 
     // =========================
@@ -1056,10 +1164,11 @@ window.addEventListener("load", () => {
     function saveData() {
 
      const data = {
+      projectName,
       currentBoxNumber,
       currentBox,
-       boxes,
-       scanDelay
+      scanDelay,
+      boxes
      };
 
       localStorage.setItem(
@@ -1082,6 +1191,9 @@ window.addEventListener("load", () => {
     const data =
       JSON.parse(saved);
 
+    projectName =
+  data.projectName || "";
+
     currentBoxNumber =
       data.currentBoxNumber || 1;
 
@@ -1097,7 +1209,7 @@ window.addEventListener("load", () => {
       data.boxes || {}
     );
 
-    scanDelay = data.scanDelay ?? 500;
+    scanDelay = data.scanDelay ?? 800;
 
   }
   catch(err) {
@@ -1224,9 +1336,46 @@ window.addEventListener("load", () => {
             );
             });
 
+        const now = new Date();
+
+const date =
+  now
+    .toISOString()
+    .slice(0, 16)
+    .replace("T", "_")
+    .replace(":", "-");
+
+const totalBoxes =
+  Object.keys(boxes).length;
+
+let totalItems = 0;
+
+Object.values(boxes)
+  .forEach(inventory => {
+
+    Object.values(inventory)
+      .forEach(item => {
+
+        totalItems += item.qty;
+
+      });
+  });
+
+const safeProjectName =
+  projectName.replace(
+    /[^a-z0-9]/gi,
+    "_"
+  );
+
+const fileName =
+  `${safeProjectName}_` +
+  `${date}_` +
+  `${totalBoxes}Boxes_` +
+  `${totalItems}Items.xlsx`;
+
         XLSX.writeFile(
             workbook,
-            "inventory_master.xlsx"
+            fileName
         );
     }
 
@@ -1245,6 +1394,8 @@ window.addEventListener("load", () => {
   currentBoxNumber = 1;
 
   currentBox = "BOX_001";
+
+  projectName = "";
 
   Object.keys(boxes).forEach(key => {
     delete boxes[key];
