@@ -327,29 +327,75 @@
   "
 >
 
-  Scan Sensitivity
-
-  <input
-    type="range"
-    min="100"
-    max="1500"
-    step="50"
-    value="500"
-    id="scanDelaySlider"
-    oninput="updateScanDelay(this.value)"
-    style="width:100%;"
-  >
+<div
+  style="
+    margin-top:10px;
+    background:white;
+    padding:12px;
+    border-radius:10px;
+  "
+>
 
   <div
-    id="scanDelayValue"
     style="
-      text-align:center;
       font-weight:bold;
-      margin-top:5px;
+      margin-bottom:10px;
     "
   >
-    500 ms
+    Scan Mode
   </div>
+
+  <div
+    style="
+      display:flex;
+      gap:10px;
+    "
+  >
+
+    <button
+      onclick="setScanMode(400)"
+      style="
+        background:#2e7d32;
+        flex:1;
+      "
+    >
+      Fast
+    </button>
+
+    <button
+      onclick="setScanMode(700)"
+      style="
+        background:#1976d2;
+        flex:1;
+      "
+    >
+      Normal
+    </button>
+
+    <button
+      onclick="setScanMode(1200)"
+      style="
+        background:#ef6c00;
+        flex:1;
+      "
+    >
+      Safe
+    </button>
+
+  </div>
+
+  <div
+    id="scanModeText"
+    style="
+      margin-top:10px;
+      text-align:center;
+      font-weight:bold;
+    "
+  >
+    Normal
+  </div>
+
+</div>
 
 </div>
 
@@ -783,15 +829,24 @@ function editQty(key) {
     }
 
 
-  function updateScanDelay(value) {
+  function setScanMode(value) {
 
-  scanDelay =
-    parseInt(value);
+  scanDelay = value;
+
+  let mode = "Normal";
+
+  if (value <= 400) {
+    mode = "Fast";
+  }
+
+  else if (value >= 1200) {
+    mode = "Safe";
+  }
 
   document.getElementById(
-    "scanDelayValue"
+    "scanModeText"
   ).innerText =
-    `${scanDelay} ms`;
+    `${mode} (${scanDelay} ms)`;
 
   saveData();
 }
@@ -871,6 +926,8 @@ loadData();
 if (!boxes[currentBox]) {
   boxes[currentBox] = {};
 }
+
+setScanMode(scanDelay);
 
 renderTable();
 
@@ -1051,15 +1108,6 @@ window.addEventListener("load", () => {
     );
   }
 }
-
-document.getElementById(
-  "scanDelaySlider"
-).value = scanDelay;
-
-document.getElementById(
-  "scanDelayValue"
-).innerText =
-  `${scanDelay} ms`;
 
 
     // =========================
