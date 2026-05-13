@@ -440,6 +440,8 @@
     let lastScanTime = 0;
     let lastAction = null;
     let scanDelay = 800;
+    let scanHistory = [];
+    let undoGroupDelay = 1200;
 
     // =========================
     // SOUND
@@ -829,6 +831,16 @@ function editQty(key) {
 
         inventory[uniqueKey].qty++;
 
+        scanHistory.push({
+          key: uniqueKey,
+          box: currentBox,
+          timestamp: Date.now()
+        });
+
+if (scanHistory.length > 200) {
+  scanHistory.shift();
+}
+
         lastAction = {
           box: currentBox,
           key: uniqueKey
@@ -854,6 +866,19 @@ function editQty(key) {
         renderTable();
 
         saveData();
+
+
+
+
+        /*******************************************
+        *///////////////////////////////////////////
+              console.log(
+                getLastScanGroup()
+              );
+
+        /*******************************************
+        ********************************************/
+
 
       }
       catch(err) {
@@ -1313,6 +1338,19 @@ window.addEventListener("load", () => {
 
     function downloadExcel() {
 
+        const exportName =
+      prompt("Export Name");
+
+     if (!exportName) {
+       return;
+     }
+
+const safeExportName =
+  exportName.replace(
+    /[^a-z0-9]/gi,
+    "_"
+  );
+
         const workbook =
         XLSX.utils.book_new();
 
@@ -1341,7 +1379,7 @@ window.addEventListener("load", () => {
 const date =
   now
     .toISOString()
-    .slice(0, 16)
+    .slice(0, 10)
     .replace("T", "_")
     .replace(":", "-");
 
@@ -1361,14 +1399,8 @@ Object.values(boxes)
       });
   });
 
-const safeProjectName =
-  projectName.replace(
-    /[^a-z0-9]/gi,
-    "_"
-  );
-
 const fileName =
-  `${safeProjectName}_` +
+  `${safeExportName}_` +
   `${date}_` +
   `${totalBoxes}Boxes_` +
   `${totalItems}Items.xlsx`;
@@ -1378,6 +1410,63 @@ const fileName =
             fileName
         );
     }
+
+
+    // =========================
+    // scanGroup
+    // =========================
+
+    function getLastScanGroup() {
+
+  if (scanHistory.length === 0) {
+    return [];
+  }
+
+  const group = [];
+
+  const last =
+    scanHistory[
+      scanHistory.length - 1
+    ];
+
+  group.push(last);
+
+  for (
+    let i = scanHistory.length - 2;
+    i >= 0;
+    i--
+  ) {
+
+    const current =
+      scanHistory[i];
+
+    const sameKey =
+      current.key === last.key;
+
+    const sameBox =
+      current.box === last.box;
+
+    const closeTime =
+      last.timestamp -
+      current.timestamp
+      <= undoGroupDelay;
+
+    if (
+      sameKey &&
+      sameBox &&
+      closeTime
+    ) {
+
+      group.push(current);
+
+    } else {
+
+      break;
+    }
+  }
+
+  return group;
+}
 
     // =========================
     // CLEAR DATA
