@@ -343,15 +343,6 @@
   "
 >
 
-<div
-  style="
-    margin-top:10px;
-    background:white;
-    padding:12px;
-    border-radius:10px;
-  "
->
-
   <div
     style="
       font-weight:bold;
@@ -454,10 +445,11 @@
 
     let lastScan = "";
     let lastScanTime = 0;
-    let lastAction = null;
     let scanDelay = 800;
     let scanHistory = [];
     let undoGroupDelay = 1200;
+
+    let html5QrCode = null;
 
     // =========================
     // SOUND
@@ -515,6 +507,16 @@
 }
 
 
+  function escapeHTML(text) {
+
+    return String(text)
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#039;");
+  }
+
 
     function renderTable() {
 
@@ -539,7 +541,7 @@
         total += item.qty;
 
         const key =
-          `${item.partNumber}|${item.nameEN}`;
+          `${escapeHTML(item.partNumber)}|${escapeHTML(item.nameEN)}`;
 
         const safeKey =
           key.replace(/'/g, "\\'");
@@ -548,11 +550,11 @@
         <tr>
 
           <td>
-            ${item.partNumber}
+            ${escapeHTML(item.partNumber)}
           </td>
 
           <td>
-            ${item.nameEN}
+            ${escapeHTML(item.nameEN)}
           </td>
 
           <td class="qty">
@@ -644,8 +646,11 @@
 
 function createNewBox() {
 
+  const currentInventory =
+  boxes[currentBox] || {};
+
   const hasItems =
-    Object.keys(boxes[currentBox]).length > 0;
+    Object.keys(currentInventory).length > 0;
 
   if (!hasItems) {
 
@@ -710,35 +715,54 @@ function nextBox() {
 
 function increaseQty(key) {
 
-  boxes[currentBox][key].qty++;
+  const inventory =
+    boxes[currentBox];
+
+  if (!inventory?.[key]) {
+    return;
+  }
+
+  inventory[key].qty++;
 
   renderTable();
 
-  //saveDate();
   saveData();
 }
 
 function decreaseQty(key) {
 
-  if (boxes[currentBox][key].qty > 1) {
+  const inventory =
+    boxes[currentBox];
 
-    boxes[currentBox][key].qty--;
+  if (!inventory?.[key]) {
+    return;
+  }
+
+  if (inventory[key].qty > 1) {
+
+    inventory[key].qty--;
 
   } else {
 
-    delete boxes[currentBox][key];
+    delete inventory[key];
   }
 
   renderTable();
 
-  //saveDate();
   saveData();
 }
 
 function editQty(key) {
 
+  const inventory =
+    boxes[currentBox];
+
+  if (!inventory?.[key]) {
+    return;
+  }
+
   const currentQty =
-    boxes[currentBox][key].qty;
+    inventory[key].qty;
 
   const newQty = prompt(
     "New Quantity:",
@@ -759,11 +783,10 @@ function editQty(key) {
     return;
   }
 
-  boxes[currentBox][key].qty = qty;
+  inventory[key].qty = qty;
 
   renderTable();
 
-  //saveDate();
   saveData();
 }
 
@@ -777,6 +800,13 @@ function editQty(key) {
 
         const parts =
           decodedText.trim().split(/\s+/);
+
+        if (decodedText.length > 1000) {
+
+          beep(false);
+
+          return;
+        }
 
         if (parts.length < 6) {
 
@@ -816,7 +846,7 @@ function editQty(key) {
         // Anti doble scan accidental
 
         const uniqueKey =
-          `${partNumber}|${nameEN}`;
+          `${escapeHTML(partNumber)}|${escapeHTML(nameEN)}`;
 
         const now = Date.now();
 
@@ -856,11 +886,6 @@ if (scanHistory.length > 200) {
   scanHistory.shift();
 }
 
-        lastAction = {
-          box: currentBox,
-          key: uniqueKey
-        };
-
         beep(true);
         navigator.vibrate?.(80);
 
@@ -871,10 +896,10 @@ if (scanHistory.length > 200) {
           font-weight:bold;
           color:#2e7d32;
         ">
-          ${partNumber}
+          ${escapeHTML(partNumber)}
         </div>
         <div style="font-size:16px;">
-          ${nameEN}
+          ${escapeHTML(nameEN)}
         </div>
         `;
 
@@ -944,7 +969,12 @@ const qrConfig = {
 
 function startScanner() {
 
-  const html5QrCode = new Html5Qrcode("reader");
+   if (html5QrCode) {
+      return;
+    }
+
+    html5QrCode =
+      new Html5Qrcode("reader");
 
   Html5Qrcode.getCameras()
     .then(devices => {
@@ -991,13 +1021,35 @@ function startScanner() {
     });
 }
 
-loadData();
 
-setupProject();
+  async function stopScanner() {
+
+    if (!html5QrCode) {
+      return;
+    }
+
+    try {
+
+      await html5QrCode.stop();
+      await html5QrCode.clear();
+
+    } catch(err) {
+
+      console.error(err);
+
+    }
+
+    html5QrCode = null;
+  }
+
+
+loadData();
 
 if (!boxes[currentBox]) {
   boxes[currentBox] = {};
 }
+
+setupProject();
 
 setScanMode(scanDelay);
 
@@ -1155,16 +1207,16 @@ window.addEventListener("load", () => {
 
           div.innerHTML = `
             <strong>
-              ${item.partNumber}
+              ${escapeHTML(item.partNumber)}
             </strong>
             <br>
 
-            ${item.nameEN}
+            ${escapeHTML(item.nameEN)}
 
             <br><br>
 
             <strong>
-              ${boxName}
+              ${escapeHTML(boxName)}
             </strong>
 
             — Qty:
@@ -1203,19 +1255,34 @@ window.addEventListener("load", () => {
 
     function saveData() {
 
-     const data = {
+  try {
+
+    const data = {
       projectName,
       currentBoxNumber,
       currentBox,
       scanDelay,
       boxes
-     };
+    };
 
-      localStorage.setItem(
-       "qrInventoryData",
+    localStorage.setItem(
+      "qrInventoryData",
       JSON.stringify(data)
-     );
-    }
+    );
+
+  }
+  catch(err) {
+
+    console.error(
+      "Save error",
+      err
+    );
+
+    alert(
+      "Storage full. Export your data."
+    );
+  }
+}
 
     function loadData() {
 
@@ -1311,6 +1378,7 @@ window.addEventListener("load", () => {
             document.createElement("div");
 
           boxDiv.style = `
+            color:white;
             background:#1e1e1e;
             padding:12px;
             margin-bottom:8px;
@@ -1733,7 +1801,7 @@ const safeExportName =
                   totalItems += item.qty;
 
                   const globalKey =
-                    `${item.partNumber}|${item.nameEN}`;
+                    `${escapeHTML(item.partNumber)}|${escapeHTML(item.nameEN)}`;
 
                   if (!globalItems[globalKey]) {
 
@@ -1960,17 +2028,6 @@ const date =
     .replace(":", "-");
 
 
-Object.values(boxes)
-  .forEach(inventory => {
-
-    Object.values(inventory)
-      .forEach(item => {
-
-        totalItems += item.qty;
-
-      });
-  });
-
 const fileName =
   `${safeExportName}_` +
   `${date}_` +
@@ -2073,6 +2130,7 @@ const fileName =
         // Reset inventory
 
         boxes = {};
+        scanHistory = [];
 
         // Read all sheets
 
@@ -2082,7 +2140,8 @@ const fileName =
             // Ignore summary
 
             if (
-              sheetName === "SUMMARY"
+              sheetName === "SUMMARY" ||
+              sheetName === "GLOBAL_SUMMARY"
             ) {
               return;
             }
@@ -2104,6 +2163,12 @@ const fileName =
 
             rows.forEach(row => {
 
+              if (
+                  typeof row !== "object"
+                ) {
+                  return;
+                }
+
               const partNumber =
                 row["Part Number"];
 
@@ -2122,7 +2187,7 @@ const fileName =
               }
 
               const key =
-                `${partNumber}|${nameEN}`;
+                `${escapeHTML(partNumber)}|${escapeHTML(nameEN)}`;
 
               boxes[sheetName][key] = {
                 partNumber,
@@ -2238,6 +2303,21 @@ const fileName =
 
     });
 }
+
+document.addEventListener(
+  "visibilitychange",
+  async () => {
+
+    if (document.hidden) {
+
+      await stopScanner();
+
+    } else {
+
+      setTimeout(startScanner, 300);
+    }
+  }
+);
 
   </script>
 
