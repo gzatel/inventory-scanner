@@ -318,6 +318,41 @@
 
   <div id="searchResults"></div>
 
+  <div
+  style="
+    margin-top:10px;
+    background:white;
+    padding:12px;
+    border-radius:10px;
+  "
+>
+
+  Scan Sensitivity
+
+  <input
+    type="range"
+    min="100"
+    max="1500"
+    step="50"
+    value="500"
+    id="scanDelaySlider"
+    oninput="updateScanDelay(this.value)"
+    style="width:100%;"
+  >
+
+  <div
+    id="scanDelayValue"
+    style="
+      text-align:center;
+      font-weight:bold;
+      margin-top:5px;
+    "
+  >
+    500 ms
+  </div>
+
+</div>
+
   <table>
     <thead>
       <tr>
@@ -343,12 +378,11 @@
 
     let searchTerm = "";
 
-    let boxes = {
-        [currentBox]: {}
-    };
+    let boxes = {};
 
     let lastScan = "";
     let lastScanTime = 0;
+    let scanDelay = 500;
 
     // =========================
     // SOUND
@@ -394,7 +428,7 @@
     let total = 0;
 
     const inventory =
-      boxes[currentBox];
+      boxes[currentBox] || {};
 
     Object.values(inventory)
       .sort((a, b) =>
@@ -687,7 +721,7 @@ function editQty(key) {
 
         if (
           uniqueKey === lastScan &&
-          now - lastScanTime < 500
+          now - lastScanTime < scanDelay
         ) {
           return;
         }
@@ -747,6 +781,20 @@ function editQty(key) {
           </span>`;
       }
     }
+
+
+  function updateScanDelay(value) {
+
+  scanDelay =
+    parseInt(value);
+
+  document.getElementById(
+    "scanDelayValue"
+  ).innerText =
+    `${scanDelay} ms`;
+
+  saveData();
+}
 
     // =========================
     // QR SCANNER
@@ -820,6 +868,10 @@ function startScanner() {
 
 loadData();
 
+if (!boxes[currentBox]) {
+  boxes[currentBox] = {};
+}
+
 renderTable();
 
 window.addEventListener("load", () => {
@@ -838,6 +890,14 @@ window.addEventListener("load", () => {
        .getElementById("searchInput")
        .value
        .toLowerCase();
+
+      const table =
+        document.querySelector("table");
+
+      table.style.display =
+        searchTerm
+          ? "none"
+          : "table";
 
       renderGlobalSearch();
 
@@ -941,7 +1001,8 @@ window.addEventListener("load", () => {
      const data = {
       currentBoxNumber,
       currentBox,
-       boxes
+       boxes,
+       scanDelay
      };
 
       localStorage.setItem(
@@ -979,6 +1040,8 @@ window.addEventListener("load", () => {
       data.boxes || {}
     );
 
+    scanDelay = data.scanDelay ?? 500;
+
   }
   catch(err) {
 
@@ -988,6 +1051,15 @@ window.addEventListener("load", () => {
     );
   }
 }
+
+document.getElementById(
+  "scanDelaySlider"
+).value = scanDelay;
+
+document.getElementById(
+  "scanDelayValue"
+).innerText =
+  `${scanDelay} ms`;
 
 
     // =========================
