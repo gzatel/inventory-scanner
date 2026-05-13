@@ -32,7 +32,7 @@
   <script src="https://unpkg.com/html5-qrcode"></script>
 
   <!-- XLSX Export -->
-  <script src="https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js"></script>
+  <script src="https://unpkg.com/xlsx-js-style/dist/xlsx.bundle.js"></script>
 
   
 
@@ -1335,6 +1335,142 @@ window.addEventListener("load", () => {
     // EXPORT EXCEL
     // =========================
 
+    function styleWorksheet(worksheet) {
+
+      const range =
+        XLSX.utils.decode_range(
+          worksheet["!ref"]
+        );
+
+      for (
+        let R = range.s.r;
+        R <= range.e.r;
+        ++R
+      ) {
+
+        for (
+          let C = range.s.c;
+          C <= range.e.c;
+          ++C
+        ) {
+
+          const cellAddress =
+            XLSX.utils.encode_cell({
+              r: R,
+              c: C
+            });
+
+          const cell =
+            worksheet[cellAddress];
+
+          if (!cell) {
+            continue;
+          }
+
+          cell.s = {
+
+            font: {
+              name: "Arial",
+              sz: 11
+            },
+
+            alignment: {
+              vertical: "center"
+            }
+
+          };
+
+          // HEADER TABLE
+
+          if (R === 4) {
+
+            cell.s = {
+
+              font: {
+                bold: true,
+                color: {
+                  rgb: "FFFFFF"
+                }
+              },
+
+              fill: {
+                fgColor: {
+                  rgb: "1976D2"
+                }
+              },
+
+              alignment: {
+                horizontal: "center",
+                vertical: "center"
+              },
+
+              border: {
+                top: {
+                  style: "thin",
+                  color: { rgb: "CCCCCC" }
+                },
+                bottom: {
+                  style: "thin",
+                  color: { rgb: "CCCCCC" }
+                },
+                left: {
+                  style: "thin",
+                  color: { rgb: "CCCCCC" }
+                },
+                right: {
+                  style: "thin",
+                  color: { rgb: "CCCCCC" }
+                }
+              }
+
+            };
+          }
+
+          // INFO ROWS
+
+          if (
+            R <= 2 &&
+            C === 0
+          ) {
+
+            cell.s.font = {
+              bold: true
+            };
+          }
+
+          // ZEBRA ROWS
+
+          if (
+            R >= 5 &&
+            R % 2 === 0
+          ) {
+
+            cell.s.fill = {
+              fgColor: {
+                rgb: "F5F5F5"
+              }
+            };
+          }
+
+          // QTY COLUMN
+
+          if (
+            C === 2 &&
+            R >= 5
+          ) {
+
+            cell.s.alignment = {
+              horizontal: "center"
+            };
+
+            cell.s.font = {
+              bold: true
+            };
+          }
+        }
+      }
+    }
+
     function downloadExcel() {
 
         const exportName =
@@ -1475,6 +1611,8 @@ const safeExportName =
                     xSplit: 0,
                     ySplit: 5
                   };
+
+                  styleWorksheet(worksheet);
 
             XLSX.utils.book_append_sheet(
                 workbook,
