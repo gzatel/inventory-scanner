@@ -1014,48 +1014,61 @@ window.addEventListener("load", () => {
 
 
 
-    function undoLastScan() {
+  function undoLastScan() {
 
-  if (!lastAction) {
+  const group =
+    getLastScanGroup();
+
+  if (group.length === 0) {
 
     alert("Nothing to undo");
 
     return;
   }
 
-  const inventory =
-    boxes[lastAction.box];
+  group.forEach(scan => {
 
-  if (!inventory) {
-    return;
-  }
+    const inventory =
+      boxes[scan.box];
 
-  const item =
-    inventory[lastAction.key];
+    if (!inventory) {
+      return;
+    }
 
-  if (!item) {
-    return;
-  }
+    const item =
+      inventory[scan.key];
 
-  item.qty--;
+    if (!item) {
+      return;
+    }
 
-  if (item.qty <= 0) {
-    delete inventory[lastAction.key];
-  }
+    item.qty--;
+
+    if (item.qty <= 0) {
+
+      delete inventory[scan.key];
+    }
+  });
+
+  const last =
+    group[group.length - 1];
 
   currentBox =
-    lastAction.box;
+    last.box;
 
   currentBoxNumber =
     parseInt(
       currentBox.replace("BOX_", "")
     );
 
-  lastAction = null;
+  scanHistory.splice(
+    scanHistory.length - group.length,
+    group.length
+  );
 
   beep(false);
 
-  navigator.vibrate?.(120);
+  navigator.vibrate?.(150);
 
   document.getElementById("status")
     .innerHTML =
@@ -1065,7 +1078,7 @@ window.addEventListener("load", () => {
       font-size:22px;
       font-weight:bold;
     ">
-      Last scan removed
+      Removed ${group.length} scans
     </div>
     `;
 
