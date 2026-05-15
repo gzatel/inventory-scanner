@@ -1561,12 +1561,6 @@ window.addEventListener("load", () => {
           };
 
 
-          const isGlobalSheet =
-
-            worksheet["A1"] &&
-            worksheet["A1"].v ===
-            "GLOBAL INVENTORY";
-
 
           // HEADER TABLE
 
@@ -1583,9 +1577,7 @@ window.addEventListener("load", () => {
 
               fill: {
                 fgColor: {
-                  rgb: isGlobalSheet
-                    ? "ff0000"
-                    : "e87d7d"
+                  rgb: "e87d7d"
                 }
               },
 
@@ -1678,209 +1670,6 @@ window.addEventListener("load", () => {
 
 
     }
-
-
-    function styleSummarySheet(worksheet) {
-
-  const range =
-    XLSX.utils.decode_range(
-      worksheet["!ref"]
-    );
-
-  for (
-    let R = range.s.r;
-    R <= range.e.r;
-    ++R
-  ) {
-
-    for (
-      let C = range.s.c;
-      C <= range.e.c;
-      ++C
-    ) {
-
-      const cellAddress =
-        XLSX.utils.encode_cell({
-          r: R,
-          c: C
-        });
-
-      const cell =
-        worksheet[cellAddress];
-
-      if (!cell) {
-        continue;
-      }
-
-      // BASE STYLE
-
-      cell.s = {
-
-        font: {
-          name: "Arial",
-          sz: 11,
-          color: { rgb: "222222" }
-        },
-
-        alignment: {
-          vertical: "center",
-          wrapText: true
-        }
-
-      };
-
-      // =========================
-      // TITLE
-      // =========================
-
-      if (R === 0) {
-
-        cell.s = {
-
-          font: {
-            bold: true,
-            sz: 18,
-            color: {
-              rgb: "C55A5A"
-            }
-          },
-
-          alignment: {
-            horizontal: "left",
-            vertical: "center"
-          }
-
-        };
-      }
-
-      // =========================
-      // LABELS
-      // =========================
-
-      if (
-        (R >= 1 && R <= 4) &&
-        C === 0
-      ) {
-
-        cell.s.font = {
-          bold: true,
-          color: {
-            rgb: "444444"
-          }
-        };
-      }
-
-      // =========================
-      // TABLE HEADER
-      // =========================
-
-      if (R === 6) {
-
-        cell.s = {
-
-          font: {
-            bold: true,
-            color: {
-              rgb: "FFFFFF"
-            }
-          },
-
-          fill: {
-            fgColor: {
-              rgb: "C62828"
-            }
-          },
-
-          alignment: {
-            horizontal: "center",
-            vertical: "center"
-          },
-
-          border: {
-            top: {
-              style: "thin",
-              color: { rgb: "DDDDDD" }
-            },
-            bottom: {
-              style: "thin",
-              color: { rgb: "DDDDDD" }
-            },
-            left: {
-              style: "thin",
-              color: { rgb: "DDDDDD" }
-            },
-            right: {
-              style: "thin",
-              color: { rgb: "DDDDDD" }
-            }
-          }
-
-        };
-      }
-
-      // =========================
-      // ZEBRA ROWS
-      // =========================
-
-      if (
-        R >= 7 &&
-        R % 2 === 1
-      ) {
-
-        cell.s.fill = {
-          fgColor: {
-            rgb: "F7F7F7"
-          }
-        };
-      }
-
-      // =========================
-      // BOX COLUMN
-      // =========================
-
-      if (
-        R >= 7 &&
-        C === 0
-      ) {
-
-        cell.s.font = {
-          bold: true
-        };
-      }
-
-      // =========================
-      // ITEMS COLUMN
-      // =========================
-
-      if (
-        R >= 7 &&
-        C === 1
-      ) {
-
-        cell.s.alignment = {
-          horizontal: "center"
-        };
-
-        cell.s.font = {
-          bold: true,
-          color: {
-            rgb: "C62828"
-          }
-        };
-      }
-    }
-  }
-
-  // ROW HEIGHTS
-
-  worksheet["!rows"] = [
-    { hpt: 28 },
-    { hpt: 20 },
-    { hpt: 20 },
-    { hpt: 20 },
-    { hpt: 20 }
-  ];
-}
 
 
     function downloadExcel() {
@@ -2010,7 +1799,7 @@ window.addEventListener("load", () => {
           ref: "A7:B7"
         };
 
-        styleSummarySheet(summarySheet);
+        styleWorksheet(summarySheet);
 
         // Add sheet
 
@@ -2055,6 +1844,9 @@ window.addEventListener("load", () => {
 
             ["GLOBAL INVENTORY"],
             [],
+            [],
+            [],
+
             [
               "Part Number",
               "Details",
@@ -2077,7 +1869,7 @@ window.addEventListener("load", () => {
           globalSheet,
           globalData,
           {
-            origin: "A5",
+            origin: "A6",
             skipHeader: true
           }
         );
@@ -2096,7 +1888,7 @@ window.addEventListener("load", () => {
         // filter
 
         globalSheet["!autofilter"] = {
-          ref: "A3:D3"
+          ref: "A5:D5"
         };
 
         // freeze
@@ -2104,9 +1896,9 @@ window.addEventListener("load", () => {
         globalSheet["!freeze"] = {
 
           xSplit: 0,
-          ySplit: 4,
+          ySplit: 5,
 
-          topLeftCell: "A5",
+          topLeftCell: "A6",
 
           activePane: "bottomLeft",
 
