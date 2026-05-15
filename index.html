@@ -342,7 +342,9 @@
 
     overflow-y:auto;
 
-    background:white;
+    background:#f8fafc;
+
+    backdrop-filter: blur(8px);
 
     border-radius:14px;
 
@@ -1487,15 +1489,15 @@ window.addEventListener("load", () => {
 
             background:${
               boxName === currentBox
-                ? "rgba(25,118,210,0.10)"
-                : "transparent"
+                ? "#dbeafe"
+                : "#ffffff"
             };
 
             border:${
               boxName === currentBox
-                ? "1px solid rgba(25,118,210,0.25)"
-                : "1px solid transparent"
-            };
+                ? "1px solid #93c5fd"
+                : "1px solid #e5e7eb"
+            };    
           `;
 
           boxDiv.innerHTML = `
@@ -1508,7 +1510,7 @@ window.addEventListener("load", () => {
 
             <div style="
               font-size:12px;
-              opacity:0.65;
+              opacity:0.8;
               margin-top:2px;
             ">
               ${total} items
