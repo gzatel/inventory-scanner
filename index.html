@@ -325,7 +325,7 @@
   BOX_001 ▼
 </div>
 
-  <div
+ <div
   id="boxList"
   style="
     display:none;
@@ -337,19 +337,19 @@
 
     transform:translateX(-50%);
 
-    width:220px;
-    max-height:300px;
+    width:240px;
+    max-height:320px;
 
     overflow-y:auto;
 
-    background:#f8fafc;
+    background:#1f2937;
 
-    backdrop-filter: blur(8px);
+    border:1px solid rgba(255,255,255,0.08);
 
     border-radius:14px;
 
     box-shadow:
-      0 10px 30px rgba(0,0,0,0.18);
+      0 12px 30px rgba(0,0,0,0.35);
 
     padding:8px;
 
@@ -1485,33 +1485,38 @@ window.addEventListener("load", () => {
 
             cursor:pointer;
 
-            margin-bottom:4px;
+            margin-bottom:6px;
+
+            transition:0.15s;
 
             background:${
               boxName === currentBox
-                ? "#dbeafe"
-                : "#ffffff"
+                ? "#2563eb"
+                : "#374151"
             };
 
             border:${
               boxName === currentBox
-                ? "1px solid #93c5fd"
-                : "1px solid #e5e7eb"
-            };    
+                ? "1px solid #60a5fa"
+                : "1px solid #4b5563"
+            };
+
+            color:white;
           `;
 
           boxDiv.innerHTML = `
             <div style="
               font-size:15px;
-              font-weight:600;
+              font-weight:700;
+              color:white;
             ">
               ${boxName}
             </div>
 
             <div style="
               font-size:12px;
-              opacity:0.8;
-              margin-top:2px;
+              color:#cbd5e1;
+              margin-top:3px;
             ">
               ${total} items
             </div>
