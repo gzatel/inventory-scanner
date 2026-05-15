@@ -42,9 +42,12 @@
       font-family: Arial, sans-serif;
       margin: 0;
       padding: 15px;
-      background: #f5f5f5;
+      background: #eceff1;
       -webkit-user-select: none;
       user-select: none;
+
+      overscroll-behavior: none;
+     -webkit-tap-highlight-color: transparent;
     }
 
     h1 {
@@ -58,6 +61,7 @@
       margin-top: 10px;
       border-radius: 12px;
       overflow: hidden;
+      background:black;
     }
 
     #status {
@@ -99,7 +103,7 @@
     }
 
     button {
-      padding: 12px 18px;
+      padding: 10px 14px;
       border: none;
       border-radius: 8px;
       font-size: 16px;
@@ -175,6 +179,8 @@
         background: #1976d2;
         color: white;
 
+        box-shadow: 0 2px 10px rgba(0,0,0,0.15);
+
         display: flex;
         justify-content: space-between;
         align-items: center;
@@ -206,6 +212,11 @@
 
      font-size: 16px;
     }
+
+    #searchResults {
+      max-height: 300px;
+      overflow-y: auto;
+    } 
   
 
   </style>
@@ -404,8 +415,7 @@
 
 </div>
 
-</div>
-
+  <div style="overflow-x:auto;">
   <table>
     <thead>
       <tr>
@@ -417,6 +427,7 @@
 
     <tbody id="tableBody"></tbody>
   </table>
+</div>
 
   <input
   type="file"
@@ -672,7 +683,6 @@ function createNewBox() {
 
   renderTable();
 
-  //saveDate();
   saveData();
 }
 
@@ -732,7 +742,7 @@ function increaseQty(key) {
 function decreaseQty(key) {
 
   const inventory =
-    boxes[currentBox];
+  boxes[currentBox] || {};
 
   if (!inventory?.[key]) {
     return;
@@ -755,7 +765,7 @@ function decreaseQty(key) {
 function editQty(key) {
 
   const inventory =
-    boxes[currentBox];
+  boxes[currentBox] || {};
 
   if (!inventory?.[key]) {
     return;
@@ -862,8 +872,8 @@ function editQty(key) {
 
         // Agregar / incrementar
 
-        const inventory = 
-          boxes[currentBox];
+        const inventory =
+         boxes[currentBox] || (boxes[currentBox] = {});
 
         if (!inventory[uniqueKey]) {
 
@@ -906,6 +916,19 @@ if (scanHistory.length > 200) {
         renderTable();
 
         saveData();
+
+        setTimeout(() => {
+
+            if (
+              document.getElementById("status")
+                .innerText.includes(partNumber)
+            ) {
+
+              document.getElementById("status")
+                .innerHTML = "";
+            }
+
+          }, 2500); 
 
       }
       catch(err) {
@@ -998,7 +1021,7 @@ function startScanner() {
       html5QrCode.start(
         cameraId,
         {
-          fps: 20,
+          fps: 12,
           qrbox: 180,
           videoConstraints: {
             facingMode: "environment",
@@ -1487,6 +1510,14 @@ window.addEventListener("load", () => {
 
           };
 
+
+          const isGlobalSheet =
+
+            worksheet["A1"] &&
+            worksheet["A1"].v ===
+            "GLOBAL INVENTORY";
+
+
           // HEADER TABLE
 
           if (R === 4) {
@@ -1535,12 +1566,6 @@ window.addEventListener("load", () => {
             };
           }
 
-
-          const isGlobalSheet =
-
-            worksheet["A1"] &&
-            worksheet["A1"].v ===
-            "GLOBAL INVENTORY";
 
 
           // INFO ROWS
@@ -2002,7 +2027,7 @@ window.addEventListener("load", () => {
           globalSheet,
           globalData,
           {
-            origin: "A4",
+            origin: "A5",
             skipHeader: true
           }
         );
@@ -2029,9 +2054,9 @@ window.addEventListener("load", () => {
         globalSheet["!freeze"] = {
 
           xSplit: 0,
-          ySplit: 3,
+          ySplit: 4,
 
-          topLeftCell: "A4",
+          topLeftCell: "A5",
 
           activePane: "bottomLeft",
 
@@ -2223,6 +2248,23 @@ const fileName =
 
         const workbook =
           XLSX.read(data);
+
+
+        const summarySheet =
+          workbook.Sheets["SUMMARY"];
+
+        if (summarySheet) {
+
+          const importedProject =
+            summarySheet["B2"]?.v;
+
+          if (importedProject) {
+
+            projectName =
+              importedProject;
+          }
+        }
+        
 
         // Reset inventory
 
