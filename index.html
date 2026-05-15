@@ -311,9 +311,29 @@
     ←
   </button>
 
-  <div id="boxName">
-    BOX_001
-  </div>
+  <<div
+  id="boxName"
+  onclick="toggleBoxList()"
+  style="
+    cursor:pointer;
+    user-select:none;
+  "
+>
+  BOX_001 ▼
+</div>
+
+  <div
+    id="boxList"
+    style="
+      display:none;
+      background:var(--card);
+      padding:10px;
+      border-bottom-left-radius:12px;
+      border-bottom-right-radius:12px;
+      box-shadow:var(--shadow);
+      margin-bottom:10px;
+    "
+  ></div>
 
   <button
     onclick="nextBox()"
@@ -372,19 +392,7 @@
       Undo
     </button>
 
-    <button onclick="toggleBoxList()">
-      Boxes
-    </button>
-
   </div>
-
-  <div
-      id="boxList"
-      style="
-       display:none;
-       margin-top:10px;
-      "
-    ></div>
 
   <input
     type="text"
@@ -685,8 +693,8 @@
       .innerText = total;
 
     document.getElementById("boxName")
-  .innerText =
-  `${projectName} • ${currentBox}`;
+      .innerText =
+      `${projectName} • ${currentBox} ▼`;
 
   }
   catch(err) {
@@ -1449,15 +1457,15 @@ window.addEventListener("load", () => {
             document.createElement("div");
 
           boxDiv.style = `
-            color:white;
-            background:#1e1e1e;
+            color:var(--text);
+            background:var(--card);
             padding:12px;
             margin-bottom:8px;
             border-radius:10px;
             cursor:pointer;
             border:${
               boxName === currentBox
-                ? "2px solid var(--success)"
+                ? "2px solid var(--primary)"
                 : "1px solid var(--border)"
             };
           `;
