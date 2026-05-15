@@ -12,7 +12,7 @@
 
   <meta
     name="apple-mobile-web-app-status-bar-style"
-    content="black"
+    content="black-translucent"
   >
 
   <meta
@@ -30,10 +30,10 @@
   <title>Inventory Scanner</title>
 
   <!-- QR Scanner -->
-  <script src="https://unpkg.com/html5-qrcode"></script>
+  <script src="https://unpkg.com/html5-qrcode@2.3.8"></script>
 
   <!-- XLSX Export -->
-  <script src="https://unpkg.com/xlsx-js-style/dist/xlsx.bundle.js"></script>
+  <script src="https://unpkg.com/xlsx-js-style@1.2.0/dist/xlsx.bundle.js"></script>
 
   
 
@@ -533,6 +533,55 @@
 
   <div id="searchResults"></div>
 
+  <div style="overflow-x:auto;">
+  <table>
+    <thead>
+      <tr>
+        <th>Part Number</th>
+        <th>Details</th>
+        <th>Qty</th>
+      </tr>
+    </thead>
+
+    <tbody id="tableBody"></tbody>
+  </table>
+</div>
+
+<div class="buttons">
+    <button
+        class="download"
+        onclick="createNewBox()"
+    >
+      New Box
+    </button>
+
+    <button class="download" onclick="downloadExcel()">
+      Download Excel
+    </button>
+
+    <button
+      class="download"
+      onclick="document.getElementById('excelImport').click()"
+    >
+      Import Excel
+    </button>
+
+    <button class="clear" onclick="clearData()">
+      Clean
+    </button>
+
+
+  </div>
+
+
+  <input
+  type="file"
+  id="excelImport"
+  accept=".xlsx,.xls"
+  style="display:none"
+  onchange="importExcel(event)"
+  >
+
   <div
   style="
     margin-top:10px;
@@ -603,54 +652,6 @@
 
 </div>
 
-  <div style="overflow-x:auto;">
-  <table>
-    <thead>
-      <tr>
-        <th>Part Number</th>
-        <th>Details</th>
-        <th>Qty</th>
-      </tr>
-    </thead>
-
-    <tbody id="tableBody"></tbody>
-  </table>
-</div>
-
-<div class="buttons">
-    <button
-        class="download"
-        onclick="createNewBox()"
-    >
-      New Box
-    </button>
-
-    <button class="download" onclick="downloadExcel()">
-      Download Excel
-    </button>
-
-    <button
-      class="download"
-      onclick="document.getElementById('excelImport').click()"
-    >
-      Import Excel
-    </button>
-
-    <button class="clear" onclick="clearData()">
-      Clean
-    </button>
-
-
-  </div>
-
-  <input
-  type="file"
-  id="excelImport"
-  accept=".xlsx,.xls"
-  style="display:none"
-  onchange="importExcel(event)"
-  >
-
 
   <script>
 
@@ -675,6 +676,8 @@
     let undoGroupDelay = 1200;
 
     let html5QrCode = null;
+
+    let scannerStarting = false;
 
     // =========================
     // SOUND
@@ -710,25 +713,46 @@
     // UPDATE TABLE
     // =========================
 
-    function setupProject() {
+function setupProject() {
 
-  if (projectName) {
+  if (
+    typeof projectName === "string" &&
+    projectName.trim() !== ""
+  ) {
     return;
+  }
+
+  const saved =
+    localStorage.getItem("qrInventoryData");
+
+  if (saved) {
+
+    try {
+
+      const data = JSON.parse(saved);
+
+      if (
+        data.projectName &&
+        data.projectName.trim() !== ""
+      ) {
+
+        projectName =
+          data.projectName.trim();
+
+        return;
+      }
+
+    } catch(err) {}
   }
 
   const name = prompt(
     "Enter Project Name"
   );
 
-  if (!name || !name.trim()) {
-
-    projectName = "Inventory";
-
-  } else {
-
-    projectName =
-      name.trim();
-  }
+  projectName =
+    name && name.trim()
+      ? name.trim()
+      : "Inventory";
 
   saveData();
 }
@@ -768,10 +792,10 @@
         total += item.qty;
 
         const key =
-         `${partNumber}|${nameEN}`;
+          `${item.partNumber}|${item.nameEN}`;
 
         const safeKey =
-          key.replace(/'/g, "\\'");
+          encodeURIComponent(key);
 
         const row = `
         <tr>
@@ -939,7 +963,10 @@ function nextBox() {
   saveData();
 }
 
-function increaseQty(key) {
+function increaseQty(encodedKey) {
+
+  const key =
+    decodeURIComponent(encodedKey);
 
   const inventory =
     boxes[currentBox];
@@ -955,10 +982,13 @@ function increaseQty(key) {
   saveData();
 }
 
-function decreaseQty(key) {
+function decreaseQty(encodedKey) {
+
+  const key =
+    decodeURIComponent(encodedKey);
 
   const inventory =
-  boxes[currentBox] || {};
+    boxes[currentBox];
 
   if (!inventory?.[key]) {
     return;
@@ -978,10 +1008,13 @@ function decreaseQty(key) {
   saveData();
 }
 
-function editQty(key) {
+function editQty(encodedKey) {
+
+  const key =
+    decodeURIComponent(encodedKey);
 
   const inventory =
-  boxes[currentBox] || {};
+    boxes[currentBox];
 
   if (!inventory?.[key]) {
     return;
@@ -1050,9 +1083,11 @@ function editQty(key) {
         // Eliminar:
         // fecha / serial / qty
 
-        parts.pop();
-        parts.pop();
-        parts.pop();
+        if (parts.length >= 3) {
+
+          parts.splice(-3);
+
+        }
 
         // Obtener:
         // Part Number
@@ -1062,7 +1097,9 @@ function editQty(key) {
 
         // Ignorar japonés
 
-        parts.shift();
+        if (parts.length > 0) {
+          parts.shift();
+        }
 
         // Resto = EN
 
@@ -1208,9 +1245,14 @@ const qrConfig = {
 
 function startScanner() {
 
-   if (html5QrCode) {
+   if (
+      html5QrCode ||
+      scannerStarting
+    ) {
       return;
     }
+
+    scannerStarting = true;
 
     html5QrCode =
       new Html5Qrcode("reader");
@@ -1235,48 +1277,72 @@ function startScanner() {
       }
 
       html5QrCode.start(
-        cameraId,
-        {
-          fps: 12,
-          qrbox: 180,
-          videoConstraints: {
-            facingMode: "environment",
-            width: { ideal: 1280 },
-            height: { ideal: 720 }
-          }
-        },
-        processQR
-      )
-      .then(() => {
+  cameraId,
+  {
+    fps: 12,
+    qrbox: 180,
+    videoConstraints: {
+      facingMode: "environment",
+      width: { ideal: 1280 },
+      height: { ideal: 720 }
+    }
+  },
+  processQR
+)
+.then(() => {
 
-        console.log("Camera started");
+  scannerStarting = false;
 
-        setTimeout(() => {
+  console.log("Camera started");
 
-          const video =
-            document.querySelector("#reader video");
+  setTimeout(() => {
 
-          if (video) {
+    const video =
+      document.querySelector("#reader video");
 
-            video.setAttribute(
-              "playsinline",
-              true
-            );
+    if (video) {
 
-            video.setAttribute(
-              "muted",
-              true
-            );
+      video.setAttribute(
+        "playsinline",
+        true
+      );
 
-            video.muted = true;
-          }
+      video.setAttribute(
+        "muted",
+        true
+      );
 
-        }, 500);
+      video.muted = true;
+    }
 
-      })
-      .catch(err => {
-        console.error("Camera start error:", err);
-      });
+  }, 500);
+
+})
+.catch(err => {
+
+  scannerStarting = false;
+
+  html5QrCode = null;
+
+  console.error(
+    "Camera start error:",
+    err
+  );
+
+  document.getElementById(
+    "status"
+  ).innerHTML = `
+    <div style="
+      color:var(--danger);
+      font-size:18px;
+      font-weight:bold;
+      text-align:center;
+      margin-top:12px;
+    ">
+      Camera permission denied
+    </div>
+  `;
+});
 
     })
     .catch(err => {
@@ -1318,7 +1384,9 @@ renderTable();
 
 window.addEventListener("load", () => {
 
-  setupProject();
+  if (!projectName?.trim()) {
+    setupProject();
+  }
 
   setTimeout(startScanner, 300);
 
@@ -1419,23 +1487,21 @@ window.addEventListener("load", () => {
       table.style.display =
         searchTerm
           ? "none"
-          : "table";
+          : "";
 
       if (!searchTerm) {
 
         renderTable();
+
+        document.getElementById(
+          "searchResults"
+        ).innerHTML = "";
 
       } else {
 
         renderGlobalSearch();
       }
 
-      if (!searchTerm) {
-
-        document.getElementById(
-          "searchResults"
-        ).innerHTML = "";
-      }
     }
 
 
@@ -1733,10 +1799,14 @@ window.addEventListener("load", () => {
 
     function styleWorksheet(worksheet) {
 
-      const range =
-        XLSX.utils.decode_range(
-          worksheet["!ref"]
-        );
+      if (!worksheet["!ref"]) {
+          return;
+        }
+
+        const range =
+          XLSX.utils.decode_range(
+            worksheet["!ref"]
+          );
 
       for (
         let R = range.s.r;
@@ -2358,8 +2428,7 @@ window.addEventListener("load", () => {
             // Ignore summary
 
             if (
-              sheetName === "SUMMARY" ||
-              sheetName === "GLOBAL_SUMMARY"
+              !sheetName.startsWith("BOX_")
             ) {
               return;
             }
@@ -2486,6 +2555,12 @@ window.addEventListener("load", () => {
   currentBox = "BOX_001";
 
   projectName = "";
+
+  scanHistory = [];
+
+  lastScan = "";
+
+  lastScanTime = 0;
 
   Object.keys(boxes).forEach(key => {
     delete boxes[key];
