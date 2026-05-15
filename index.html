@@ -1459,7 +1459,32 @@ window.addEventListener("load", () => {
             },
 
             alignment: {
-              vertical: "center"
+              vertical: "center",
+              wrapText: true
+            },
+
+            border: {
+
+              top: {
+                style: "thin",
+                color: { rgb: "E0E0E0" }
+              },
+
+              bottom: {
+                style: "thin",
+                color: { rgb: "E0E0E0" }
+              },
+
+              left: {
+                style: "thin",
+                color: { rgb: "E0E0E0" }
+              },
+
+              right: {
+                style: "thin",
+                color: { rgb: "E0E0E0" }
+              }
+
             }
 
           };
@@ -1479,7 +1504,9 @@ window.addEventListener("load", () => {
 
               fill: {
                 fgColor: {
-                  rgb: "1976D2"
+                  rgb: isGlobalSheet
+                    ? "ff0000"
+                    : "e87d7d"
                 }
               },
 
@@ -1510,6 +1537,14 @@ window.addEventListener("load", () => {
             };
           }
 
+
+          const isGlobalSheet =
+
+            worksheet["A1"] &&
+            worksheet["A1"].v ===
+            "GLOBAL INVENTORY";
+
+
           // INFO ROWS
 
           if (
@@ -1539,20 +1574,36 @@ window.addEventListener("load", () => {
           // QTY COLUMN
 
           if (
-            C === 2 &&
-            R >= 5
-          ) {
+                C === 2 &&
+                R >= 5
+              ) {
 
-            cell.s.alignment = {
-              horizontal: "center"
-            };
+                cell.s.alignment = {
+                  horizontal: "center",
+                  vertical: "center"
+                };
 
-            cell.s.font = {
-              bold: true
-            };
-          }
+                cell.s.font = {
+                  bold: true,
+                  sz: 14,
+                  color: {
+                    rgb: "222222"
+                  }
+                };
+              }
         }
       }
+
+      worksheet["!rows"] = [];
+
+      for (let i = 0; i < 500; i++) {
+
+        worksheet["!rows"].push({
+          hpt: 22
+        });
+      } 
+
+
     }
 
 
@@ -1599,7 +1650,8 @@ window.addEventListener("load", () => {
         },
 
         alignment: {
-          vertical: "center"
+          vertical: "center",
+          wrapText: true
         }
 
       };
@@ -1616,7 +1668,7 @@ window.addEventListener("load", () => {
             bold: true,
             sz: 18,
             color: {
-              rgb: "C62828"
+              rgb: "C55A5A"
             }
           },
 
@@ -1841,6 +1893,15 @@ const safeExportName =
 
             ]);
 
+        summarySheet["!merges"] = [
+
+          {
+            s: { r: 0, c: 0 },
+            e: { r: 0, c: 2 }
+          }
+
+        ];
+
         // Column widths
 
         summarySheet["!cols"] = [
@@ -1851,8 +1912,15 @@ const safeExportName =
         // Freeze header
 
         summarySheet["!freeze"] = {
+
           xSplit: 0,
-          ySplit: 7
+          ySplit: 7,
+
+          topLeftCell: "A8",
+
+          activePane: "bottomLeft",
+
+          state: "frozen"
         };
 
         // Filter
@@ -1915,6 +1983,15 @@ const safeExportName =
 
           ]);
 
+         globalSheet["!merges"] = [
+
+            {
+              s: { r: 0, c: 0 },
+              e: { r: 0, c: 3 }
+            }
+
+          ];
+
         XLSX.utils.sheet_add_json(
           globalSheet,
           globalData,
@@ -1944,8 +2021,15 @@ const safeExportName =
         // freeze
 
         globalSheet["!freeze"] = {
+
           xSplit: 0,
-          ySplit: 3
+          ySplit: 3,
+
+          topLeftCell: "A4",
+
+          activePane: "bottomLeft",
+
+          state: "frozen"
         };
 
         // style
@@ -2005,8 +2089,15 @@ const safeExportName =
                   // Freeze top row
 
                   worksheet["!freeze"] = {
+
                     xSplit: 0,
-                    ySplit: 5
+                    ySplit: 5,
+
+                    topLeftCell: "A6",
+
+                    activePane: "bottomLeft",
+
+                    state: "frozen"
                   };
 
                   styleWorksheet(worksheet);
