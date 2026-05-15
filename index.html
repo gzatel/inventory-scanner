@@ -219,6 +219,9 @@
 
     #topBar {
       position: sticky;
+      position:relative;
+
+      position: sticky;
       top: 0;
       z-index: 999;
 
@@ -323,17 +326,34 @@
 </div>
 
   <div
-    id="boxList"
-    style="
-      display:none;
-      background:var(--card);
-      padding:10px;
-      border-bottom-left-radius:12px;
-      border-bottom-right-radius:12px;
-      box-shadow:var(--shadow);
-      margin-bottom:10px;
-    "
-  ></div>
+  id="boxList"
+  style="
+    display:none;
+
+    position:absolute;
+
+    top:70px;
+    left:50%;
+
+    transform:translateX(-50%);
+
+    width:220px;
+    max-height:300px;
+
+    overflow-y:auto;
+
+    background:white;
+
+    border-radius:14px;
+
+    box-shadow:
+      0 10px 30px rgba(0,0,0,0.18);
+
+    padding:8px;
+
+    z-index:5000;
+  "
+></div>
 
   <button
     onclick="nextBox()"
@@ -1457,69 +1477,43 @@ window.addEventListener("load", () => {
             document.createElement("div");
 
           boxDiv.style = `
-            display:flex;
-            justify-content:space-between;
-            align-items:center;
+            padding:12px 14px;
 
-            padding:14px 16px;
-
-            margin-bottom:8px;
-
-            border-radius:14px;
+            border-radius:10px;
 
             cursor:pointer;
 
+            margin-bottom:4px;
+
             background:${
               boxName === currentBox
-                ? "rgba(25,118,210,0.08)"
-                : "white"
+                ? "rgba(25,118,210,0.10)"
+                : "transparent"
             };
 
             border:${
               boxName === currentBox
-                ? "2px solid var(--primary)"
+                ? "1px solid rgba(25,118,210,0.25)"
                 : "1px solid transparent"
             };
-
-            transition:0.15s;
           `;
 
           boxDiv.innerHTML = `
-
-            <div>
-
-              <div style="
-                font-size:17px;
-                font-weight:700;
-              ">
-                ${boxName}
-              </div>
-
-              <div style="
-                font-size:13px;
-                opacity:0.65;
-                margin-top:2px;
-              ">
-                ${total} items
-              </div>
-
+            <div style="
+              font-size:15px;
+              font-weight:600;
+            ">
+              ${boxName}
             </div>
 
             <div style="
-              font-size:20px;
-              opacity:${boxName === currentBox ? "1" : "0.25"};
+              font-size:12px;
+              opacity:0.65;
+              margin-top:2px;
             ">
-              ${boxName === currentBox ? "✓" : "›"}
+              ${total} items
             </div>
           `;
-
-            boxDiv.onmouseenter = () => {
-               boxDiv.style.transform = "scale(1.01)";
-            };
-
-            boxDiv.onmouseleave = () => {
-              boxDiv.style.transform = "scale(1)";
-            };
 
 
           boxDiv.onclick = () => {
@@ -2353,6 +2347,24 @@ document.addEventListener(
     }
   }
 );
+
+
+document.addEventListener("click", (e) => {
+
+  const boxList =
+    document.getElementById("boxList");
+
+  const boxName =
+    document.getElementById("boxName");
+
+  if (
+    !boxList.contains(e.target) &&
+    !boxName.contains(e.target)
+  ) {
+
+    boxList.style.display = "none";
+  }
+});
 
   </script>
 
