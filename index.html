@@ -8,6 +8,7 @@
   <meta name="theme-color" content="#1e1e1e">
 
   <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
 
   <meta
     name="apple-mobile-web-app-status-bar-style"
@@ -40,8 +41,8 @@
 
     :root {
 
-      --primary: #4f8cff;
-      --primary-dark: #3478f6;
+      --primary: #2563eb;
+      --primary-dark: #1e40af;
 
       --success: #2e7d32;
       --success-dark: #1b5e20;
@@ -171,20 +172,6 @@
       display:grid;
 
       grid-template-columns:
-        repeat(auto-fit, minmax(110px, 1fr));
-
-      gap:12px;
-
-      margin-top:15px;
-
-      align-items:center;
-    }
-
-    .buttons {
-
-      display:grid;
-
-      grid-template-columns:
         repeat(auto-fit, minmax(110px, 180px));
 
       justify-content:center;
@@ -210,7 +197,10 @@
 
       cursor: pointer;
 
-      transition: 0.2s;
+      transition:
+      transform 0.15s ease,
+      filter 0.15s ease,
+      background 0.2s ease;
     }
 
     .buttons button {
@@ -227,7 +217,10 @@
     }
 
     button:hover {
-      opacity: 0.9;
+
+      transform: translateY(-1px);
+
+      filter: brightness(1.05);
     }
 
     .download {
@@ -299,21 +292,33 @@
     }
 
     #topBar {
+
       position: sticky;
-      top: 0;
+      top: 10px;
       z-index: 999;
 
       background: var(--primary);
+
       color: white;
 
-      box-shadow: var(--shadow);
+      border-radius: 18px;
+
+      border: 1px solid rgba(255,255,255,0.08);
+
+      box-shadow:
+        0 10px 25px rgba(0,0,0,0.35);
 
       display: flex;
+
       justify-content: space-between;
+
       align-items: center;
 
-      padding: 12px 15px;
+      padding: 14px 16px;
+
       font-weight: bold;
+
+      margin-bottom: 14px;
     }
 
     #boxName {
@@ -365,6 +370,36 @@
       }
     }
 
+
+    .undo-wrapper {
+
+      display:flex;
+
+      justify-content:center;
+
+      margin-top:14px;
+
+      margin-bottom:14px;
+    }
+
+    .undo-button {
+
+      background:var(--warning);
+
+      min-width:180px;
+
+      max-width:260px;
+
+      width:100%;
+
+      border-radius:14px;
+
+      font-size:18px;
+
+      box-shadow:
+        0 6px 18px rgba(0,0,0,0.25);
+    }
+
   </style>
 </head>
 
@@ -396,7 +431,8 @@
   <button
     onclick="previousBox()"
     style="
-      background:var(--topbar-btn);
+      background:rgba(255,255,255,0.10);
+      border:1px solid rgba(255,255,255,0.12);
       width:45px;
       height:45px;
       border-radius:50%;
@@ -453,7 +489,8 @@
   <button
     onclick="nextBox()"
     style="
-      background:var(--topbar-btn);
+      background:rgba(255,255,255,0.10);
+      border:1px solid rgba(255,255,255,0.12);
       width:45px;
       height:45px;
       border-radius:50%;
@@ -470,44 +507,22 @@
 
   <div id="status"></div>
 
+  <div class="undo-wrapper">
+
+    <button
+      class="undo-button"
+       onclick="undoLastScan()"
+     >
+       Undo
+     </button>
+
+    </div>
+
   <div class="summary">
     Total Items:
     <span id="totalItems">0</span>
   </div>
 
-  <div class="buttons">
-    <button
-        class="download"
-        onclick="createNewBox()"
-    >
-      New Box
-    </button>
-
-    <button class="download" onclick="downloadExcel()">
-      Download Excel
-    </button>
-
-    <button
-      class="download"
-      onclick="document.getElementById('excelImport').click()"
-    >
-      Import Excel
-    </button>
-
-    <button class="clear" onclick="clearData()">
-      Clean
-    </button>
-
-    <button
-      onclick="undoLastScan()"
-      style="
-      background:var(--warning);
-     "
-    >
-      Undo
-    </button>
-
-  </div>
 
   <input
     type="text"
@@ -602,6 +617,32 @@
   </table>
 </div>
 
+<div class="buttons">
+    <button
+        class="download"
+        onclick="createNewBox()"
+    >
+      New Box
+    </button>
+
+    <button class="download" onclick="downloadExcel()">
+      Download Excel
+    </button>
+
+    <button
+      class="download"
+      onclick="document.getElementById('excelImport').click()"
+    >
+      Import Excel
+    </button>
+
+    <button class="clear" onclick="clearData()">
+      Clean
+    </button>
+
+
+  </div>
+
   <input
   type="file"
   id="excelImport"
@@ -658,9 +699,11 @@
         ? successSound
         : errorSound;
 
+        sound.pause();
+
         sound.currentTime = 0;
 
-        sound.play();
+        sound.play().catch(() => {});
     }
 
     // =========================
@@ -725,7 +768,7 @@
         total += item.qty;
 
         const key =
-          `${escapeHTML(item.partNumber)}|${escapeHTML(item.nameEN)}`;
+         `${partNumber}|${nameEN}`;
 
         const safeKey =
           key.replace(/'/g, "\\'");
@@ -1029,7 +1072,7 @@ function editQty(key) {
         // Anti doble scan accidental
 
         const uniqueKey =
-          `${escapeHTML(partNumber)}|${escapeHTML(nameEN)}`;
+          `${partNumber}|${nameEN}`;
 
         const now = Date.now();
 
@@ -1205,7 +1248,31 @@ function startScanner() {
         processQR
       )
       .then(() => {
+
         console.log("Camera started");
+
+        setTimeout(() => {
+
+          const video =
+            document.querySelector("#reader video");
+
+          if (video) {
+
+            video.setAttribute(
+              "playsinline",
+              true
+            );
+
+            video.setAttribute(
+              "muted",
+              true
+            );
+
+            video.muted = true;
+          }
+
+        }, 500);
+
       })
       .catch(err => {
         console.error("Camera start error:", err);
@@ -1250,7 +1317,11 @@ setScanMode(scanDelay);
 renderTable();
 
 window.addEventListener("load", () => {
+
+  setupProject();
+
   setTimeout(startScanner, 300);
+
 });
 
 
@@ -1337,10 +1408,10 @@ window.addEventListener("load", () => {
     function updateSearch() {
 
       searchTerm =
-       document
-       .getElementById("searchInput")
-       .value
-       .toLowerCase();
+        document
+          .getElementById("searchInput")
+          .value
+          .toLowerCase();
 
       const table =
         document.querySelector("table");
@@ -1350,9 +1421,21 @@ window.addEventListener("load", () => {
           ? "none"
           : "table";
 
-      renderGlobalSearch();
+      if (!searchTerm) {
 
-      renderTable();
+        renderTable();
+
+      } else {
+
+        renderGlobalSearch();
+      }
+
+      if (!searchTerm) {
+
+        document.getElementById(
+          "searchResults"
+        ).innerHTML = "";
+      }
     }
 
 
@@ -1625,6 +1708,16 @@ window.addEventListener("load", () => {
                 boxName.replace("BOX_", "")
               );
 
+            document.getElementById(
+                "searchInput"
+              ).value = "";
+
+              searchTerm = "";
+
+              document.getElementById(
+                "searchResults"
+              ).innerHTML = "";
+
             renderTable();
 
             boxList.style.display = "none";
@@ -1871,7 +1964,7 @@ window.addEventListener("load", () => {
                   totalItems += item.qty;
 
                   const globalKey =
-                    `${escapeHTML(item.partNumber)}|${escapeHTML(item.nameEN)}`;
+                   `${item.partNumber}|${item.nameEN}`;
 
                   if (!globalItems[globalKey]) {
 
@@ -2132,25 +2225,21 @@ window.addEventListener("load", () => {
 
         const now = new Date();
 
-const date =
-  now
-    .toISOString()
-    .slice(0, 10)
-    .replace("T", "_")
-    .replace(":", "-");
+        const date =
+          now.toISOString().split("T")[0];
 
 
-const fileName =
-  `${safeExportName}_` +
-  `${date}_` +
-  `${totalBoxes}Boxes_` +
-  `${totalItems}Items.xlsx`;
+        const fileName =
+          `${safeExportName}_` +
+          `${date}_` +
+          `${totalBoxes}Boxes_` +
+          `${totalItems}Items.xlsx`;
 
-        XLSX.writeFile(
-            workbook,
-            fileName
-        );
-    }
+                XLSX.writeFile(
+                    workbook,
+                    fileName
+                );
+            }
 
 
     // =========================
@@ -2316,7 +2405,7 @@ const fileName =
               }
 
               const key =
-                `${escapeHTML(partNumber)}|${escapeHTML(nameEN)}`;
+               `${partNumber}|${nameEN}`;
 
               boxes[sheetName][key] = {
                 partNumber,
