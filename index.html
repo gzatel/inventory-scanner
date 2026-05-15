@@ -1457,24 +1457,70 @@ window.addEventListener("load", () => {
             document.createElement("div");
 
           boxDiv.style = `
-            color:var(--text);
-            background:var(--card);
-            padding:12px;
+            display:flex;
+            justify-content:space-between;
+            align-items:center;
+
+            padding:14px 16px;
+
             margin-bottom:8px;
-            border-radius:10px;
+
+            border-radius:14px;
+
             cursor:pointer;
+
+            background:${
+              boxName === currentBox
+                ? "rgba(25,118,210,0.08)"
+                : "white"
+            };
+
             border:${
               boxName === currentBox
                 ? "2px solid var(--primary)"
-                : "1px solid var(--border)"
+                : "1px solid transparent"
             };
+
+            transition:0.15s;
           `;
 
           boxDiv.innerHTML = `
-            <strong>${boxName}</strong>
-            <br>
-            ${total} items
+
+            <div>
+
+              <div style="
+                font-size:17px;
+                font-weight:700;
+              ">
+                ${boxName}
+              </div>
+
+              <div style="
+                font-size:13px;
+                opacity:0.65;
+                margin-top:2px;
+              ">
+                ${total} items
+              </div>
+
+            </div>
+
+            <div style="
+              font-size:20px;
+              opacity:${boxName === currentBox ? "1" : "0.25"};
+            ">
+              ${boxName === currentBox ? "✓" : "›"}
+            </div>
           `;
+
+            boxDiv.onmouseenter = () => {
+               boxDiv.style.transform = "scale(1.01)";
+            };
+
+            boxDiv.onmouseleave = () => {
+              boxDiv.style.transform = "scale(1)";
+            };
+
 
           boxDiv.onclick = () => {
 
