@@ -680,6 +680,43 @@
     Normal
   </div>
 
+  <div
+  style="
+    margin-top:12px;
+  "
+>
+
+  <div style="
+    font-weight:bold;
+    margin-bottom:8px;
+  ">
+    Camera Zoom
+  </div>
+
+  <input
+    type="range"
+    min="1"
+    max="4"
+    step="0.1"
+    value="1.5"
+    id="zoomSlider"
+    style="width:100%;"
+    oninput="setCameraZoom(this.value)"
+  >
+
+  <div
+    id="zoomText"
+    style="
+      text-align:center;
+      margin-top:6px;
+      font-weight:bold;
+    "
+  >
+    1.5x
+  </div>
+
+</div>
+
 </div>
 
 
@@ -708,6 +745,8 @@
     let html5QrCode = null;
 
     let scannerStarting = false;
+
+    let cameraZoom = 1.5;
 
     // =========================
     // SOUND
@@ -1252,6 +1291,60 @@ if (scanHistory.length > 200) {
   saveData();
 }
 
+
+
+  async function setCameraZoom(value) {
+
+    cameraZoom = parseFloat(value);
+
+    document.getElementById(
+      "zoomText"
+    ).innerText =
+      `${cameraZoom.toFixed(1)}x`;
+
+    saveData();
+
+    try {
+
+      const track =
+        html5QrCode
+          ?.getRunningTrack?.();
+
+      if (!track) {
+        return;
+      }
+
+      const capabilities =
+        track.getCapabilities();
+
+      if (!capabilities.zoom) {
+        return;
+      }
+
+      const max =
+        capabilities.zoom.max || 4;
+
+      const min =
+        capabilities.zoom.min || 1;
+
+      await track.applyConstraints({
+        advanced: [{
+          zoom: Math.min(
+            max,
+            Math.max(min, cameraZoom)
+          )
+        }]
+      });
+
+    } catch(err) {
+
+      console.log(
+        "Zoom not supported",
+        err
+      );
+    }
+  }
+
     // =========================
     // QR SCANNER
     // =========================
@@ -1347,6 +1440,10 @@ function startScanner() {
 
   }, 500);
 
+    setTimeout(() => {
+      setCameraZoom(cameraZoom);
+    }, 1000);
+
 })
 .catch(err => {
 
@@ -1409,6 +1506,15 @@ if (!boxes[currentBox]) {
 }
 
 setScanMode(scanDelay);
+
+document.getElementById(
+  "zoomSlider"
+).value = cameraZoom;
+
+document.getElementById(
+  "zoomText"
+).innerText =
+  `${cameraZoom.toFixed(1)}x`;
 
 renderTable();
 
@@ -1635,6 +1741,7 @@ window.addEventListener("load", () => {
       currentBoxNumber,
       currentBox,
       scanDelay,
+      cameraZoom,
       boxes
     };
 
@@ -1690,6 +1797,9 @@ window.addEventListener("load", () => {
     );
 
     scanDelay = data.scanDelay ?? 800;
+
+    cameraZoom =
+      data.cameraZoom ?? 1.5;
 
   }
   catch(err) {
