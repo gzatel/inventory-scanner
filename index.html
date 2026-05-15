@@ -1049,8 +1049,6 @@ if (!boxes[currentBox]) {
   boxes[currentBox] = {};
 }
 
-setupProject();
-
 setScanMode(scanDelay);
 
 renderTable();
@@ -1812,18 +1810,26 @@ window.addEventListener("load", () => {
 
     function downloadExcel() {
 
-        const exportName =
-      prompt("Export Name");
+      const exportName =
+       prompt("Project Name");
 
-     if (!exportName) {
-       return;
-     }
+        if (
+          !exportName ||
+          !exportName.trim()
+        ) {
+          return;
+        }
 
-const safeExportName =
-  exportName.replace(
-    /[^a-z0-9]/gi,
-    "_"
-  );
+        projectName =
+          exportName.trim();
+
+        saveData();
+
+        const safeExportName =
+          exportName.replace(
+            /[^a-z0-9]/gi,
+            "_"
+          );
 
         const workbook =
         XLSX.utils.book_new();
