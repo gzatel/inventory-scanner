@@ -694,43 +694,6 @@
     Normal
   </div>
 
-  <div
-  style="
-    margin-top:12px;
-  "
->
-
-  <div style="
-    font-weight:bold;
-    margin-bottom:8px;
-  ">
-    Camera Zoom
-  </div>
-
-  <input
-    type="range"
-    min="1"
-    max="4"
-    step="0.1"
-    value="1.5"
-    id="zoomSlider"
-    style="width:100%;"
-    oninput="setCameraZoom(this.value)"
-  >
-
-  <div
-    id="zoomText"
-    style="
-      text-align:center;
-      margin-top:6px;
-      font-weight:bold;
-    "
-  >
-    1.5x
-  </div>
-
-</div>
-
 </div>
 
 
@@ -760,7 +723,6 @@
 
     let scannerStarting = false;
 
-    let cameraZoom = 1.5;
 
     // =========================
     // SOUND
@@ -1306,33 +1268,6 @@ if (scanHistory.length > 200) {
 }
 
 
-
-function setCameraZoom(value) {
-
-  cameraZoom = parseFloat(value);
-
-  document.getElementById(
-    "zoomText"
-  ).innerText =
-    `${cameraZoom.toFixed(1)}x`;
-
-  saveData();
-
-  const video =
-    document.querySelector("#reader video");
-
-  if (!video) {
-    return;
-  }
-
-  video.style.transform =
-    `scale(${cameraZoom})`;
-
-  video.style.transformOrigin =
-    "center center";
-}
-
-
     // =========================
     // QR SCANNER
     // =========================
@@ -1447,7 +1382,6 @@ function startScanner() {
             "Camera track ready"
           );
 
-          setCameraZoom(cameraZoom);
         }
       }
     }
@@ -1516,15 +1450,6 @@ if (!boxes[currentBox]) {
 }
 
 setScanMode(scanDelay);
-
-document.getElementById(
-  "zoomSlider"
-).value = cameraZoom;
-
-document.getElementById(
-  "zoomText"
-).innerText =
-  `${cameraZoom.toFixed(1)}x`;
 
 renderTable();
 
@@ -1752,7 +1677,6 @@ window.addEventListener("load", () => {
       currentBoxNumber,
       currentBox,
       scanDelay,
-      cameraZoom,
       boxes
     };
 
@@ -1809,8 +1733,6 @@ window.addEventListener("load", () => {
 
     scanDelay = data.scanDelay ?? 800;
 
-    cameraZoom =
-      data.cameraZoom ?? 1.5;
 
   }
   catch(err) {
