@@ -132,40 +132,47 @@
     }
 
     #reader {
-      width: 100%;
-      max-width: 340px;
 
-      margin: 14px auto;
+  width: min(92vw, 340px);
+  height: min(92vw, 340px);
 
-      overflow: hidden;
+  margin: 14px auto;
 
-      border-radius: 18px;
+  overflow: hidden;
 
-      background: white;
+  border-radius: 18px;
 
-      border: 1px solid #e5e7eb;
+  background: black;
 
-      box-shadow:
-        0 10px 25px rgba(0,0,0,0.35);
-    }
+  border: 1px solid #e5e7eb;
 
-    #reader video {
+  box-shadow:
+    0 10px 25px rgba(0,0,0,0.15);
 
-      #reader video {
-
-      width:100%;
-
-      aspect-ratio: 1 / 1;
-
-      object-fit:cover;
-
-      border-radius:18px;
+  position: relative;
 }
-    }
 
-    #reader__scan_region {
-      background: transparent !important;
-    }
+#reader video {
+
+  width: 100% !important;
+  height: 100% !important;
+
+  object-fit: cover;
+
+  border-radius: 18px;
+}
+
+#reader__scan_region {
+
+  width: 100% !important;
+  height: 100% !important;
+
+  background: transparent !important;
+}
+
+#reader__dashboard {
+  display: none !important;
+}
 
     #reader img {
       display: none !important;
@@ -1300,55 +1307,66 @@ if (scanHistory.length > 200) {
 
   async function setCameraZoom(value) {
 
-    cameraZoom = parseFloat(value);
+  cameraZoom = parseFloat(value);
 
-    document.getElementById(
-      "zoomText"
-    ).innerText =
-      `${cameraZoom.toFixed(1)}x`;
+  document.getElementById(
+    "zoomText"
+  ).innerText =
+    `${cameraZoom.toFixed(1)}x`;
 
-    saveData();
+  saveData();
 
-    try {
+  try {
 
-      const track =
-        html5QrCode
-          ?.getRunningTrack?.();
+    const videoTrack =
+      html5QrCode?.getState
+      ? html5QrCode
+          .getRunningTrackSettings
+      : null;
 
-      if (!track) {
-        return;
-      }
+    const tracks =
+      html5QrCode?.localMediaStream
+        ?.getVideoTracks?.();
 
-      const capabilities =
-        track.getCapabilities();
-
-      if (!capabilities.zoom) {
-        return;
-      }
-
-      const max =
-        capabilities.zoom.max || 4;
-
-      const min =
-        capabilities.zoom.min || 1;
-
-      await track.applyConstraints({
-        advanced: [{
-          zoom: Math.min(
-            max,
-            Math.max(min, cameraZoom)
-          )
-        }]
-      });
-
-    } catch(err) {
-
-      console.log(
-        "Zoom not supported",
-        err
-      );
+    if (!tracks || !tracks.length) {
+      return;
     }
+
+    const track = tracks[0];
+
+    const capabilities =
+      track.getCapabilities();
+
+    if (!capabilities.zoom) {
+
+      console.log("Zoom unsupported");
+
+      return;
+    }
+
+    const min =
+      capabilities.zoom.min || 1;
+
+    const max =
+      capabilities.zoom.max || 4;
+
+    await track.applyConstraints({
+      advanced: [{
+        zoom: Math.min(
+          max,
+          Math.max(min, cameraZoom)
+        )
+      }]
+    });
+
+  } catch(err) {
+
+    console.log(
+      "Zoom error",
+      err
+    );
   }
+}
 
     // =========================
     // QR SCANNER
@@ -1408,11 +1426,18 @@ function startScanner() {
   cameraId,
   {
     fps: 10,
-    qrbox: 200,
+
+    qrbox: {
+      width: 220,
+      height: 220
+    },
+
+    aspectRatio: 1,
+
     videoConstraints: {
       facingMode: "environment",
       width: { ideal: 1280 },
-      height: { ideal: 720 }
+      height: { ideal: 1280 }
     }
   },
   processQR
@@ -1683,6 +1708,7 @@ window.addEventListener("load", () => {
 
           div.style = `
             background:var(--card);
+            color:#111827;
             padding:12px;
             margin-bottom:8px;
             border-radius:10px;
